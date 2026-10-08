@@ -1,0 +1,21 @@
+{
+  "default_branch": "main",
+  "branches": [
+    "develop",
+    "feature/RealState",
+    "main",
+    "origin"
+  ],
+  "parent": {
+    "develop": "main",
+    "feature/RealState": "main",
+    "main": null,
+    "origin": "main"
+  },
+  "order": [
+    "main",
+    "develop",
+    "feature/RealState",
+    "origin"
+  ]
+}
