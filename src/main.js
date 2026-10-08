@@ -16,11 +16,8 @@ import {
 } from "primevue";
 
 createApp(App)
-    .use(i18n)
     .use(router)
-    .use(pinia)
     .use(PrimeVue, {theme: {preset: Material}, ripple: true})
-    .use(ConfirmationService)
     .component('pv-button',         Button)
     .component('pv-column',         Column)
     .component('pv-confirm-dialog', ConfirmDialog)
