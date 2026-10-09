@@ -9,6 +9,7 @@
 </script>
 
 <template>
+    <pv-cofirm-dialog/>
     <div>
         <header class="absolute">
             <pv-toolbar class="">
