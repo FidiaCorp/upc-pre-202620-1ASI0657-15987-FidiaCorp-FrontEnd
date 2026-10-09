@@ -4,7 +4,6 @@ import App from './App.vue'
 import {
     Button,
     Column,
-    ConfirmationService,
     ConfirmDialog,
     DataTable,
     FloatLabel,
@@ -14,9 +13,12 @@ import {
     Textarea,
     Toolbar
 } from "primevue";
+import router from './router.js';
+import pinia from './pinia.js';
 
 createApp(App)
     .use(router)
+    .use(pinia)
     .use(PrimeVue, {theme: {preset: Material}, ripple: true})
     .component('pv-button',         Button)
     .component('pv-column',         Column)
