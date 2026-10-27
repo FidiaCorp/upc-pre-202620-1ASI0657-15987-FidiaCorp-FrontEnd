@@ -72,3 +72,9 @@ p { line-height: 1.7; max-width: 72ch; }
 .text-button { display: inline-block; margin-top: 20px; color: #174b85; text-decoration: underline; cursor: pointer; background: none; border: 0; }
 .text-button:disabled { opacity: .6; cursor: wait; }
 .text-button:focus-visible, summary:focus-visible { outline: 3px solid #2563eb; outline-offset: 3px; }
+
+.header-account { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
+.header-account .logout-button { margin-top: 0; }
+.logout-warning, .logout-notice { padding: 16px; margin-bottom: 24px; border: 1px solid #dbe2ed; border-radius: 8px; background: #fff; }
+.logout-warning { color: #7c3b00; border-color: #cf9a62; }
+.logout-warning .text-button { margin-top: 8px; }

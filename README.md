@@ -66,7 +66,14 @@ El cliente usa `/auth/register`, `/auth/login` y `/users/me` (GET/PUT). Los toke
 se guardan en `sessionStorage` de la pestaña; nunca se guardan contraseñas. La
 expiración o un 401 de una petición autenticada elimina la sesión y solicita
 reingreso. Perfil permite actualizar nombres, apellidos y correo; los roles se
-asignan en el backend. El cierre de sesión se incorporará en su tarea posterior.
+asignan en el backend. El botón «Cerrar sesión» del encabezado o Perfil envía `POST /auth/logout`
+para revocar únicamente el token actual y elimina el acceso local inmediatamente.
+Las respuestas privadas anteriores al cierre se descartan. Si la API falla, la
+interfaz informa que no confirmó la invalidación; «Reintentar invalidación» usa
+una copia del token solo en memoria y únicamente para revocarlo. Recargar/cerrar
+la pestaña pierde ese reintento: no se presenta el cierre remoto como confirmado.
+Un 401 al revocar indica que ese token ya no permite acceso. Otras sesiones
+permanecen activas.
 
 En Perfil se puede consultar, activar o desactivar el segundo factor TOTP. El
 backend necesita `TWO_FACTOR_ENCRYPTION_KEY` configurada (véase su README).

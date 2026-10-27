@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
 import { getProfile, updateProfile } from '../account/api.js'
+import LogoutButton from '../account/LogoutButton.vue'
 import TwoFactorSettings from '../account/TwoFactorSettings.vue'
 import { session } from '../account/session.js'
 import { normalizeProfile, validateAccount } from '../account/validation.js'
@@ -55,6 +56,7 @@ onMounted(load)
     </form>
     <p v-if="message" class="form-error" role="alert">{{ message }}</p>
     <p v-if="success" class="success-message" role="status">{{ success }}</p>
+    <LogoutButton />
     <TwoFactorSettings v-if="loaded" />
     <button v-if="!loading && !loaded" class="primary-button" type="button" @click="load">Reintentar</button>
   </section>
