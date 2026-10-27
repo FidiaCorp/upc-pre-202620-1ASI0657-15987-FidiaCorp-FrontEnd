@@ -78,3 +78,27 @@ p { line-height: 1.7; max-width: 72ch; }
 .logout-warning, .logout-notice { padding: 16px; margin-bottom: 24px; border: 1px solid #dbe2ed; border-radius: 8px; background: #fff; }
 .logout-warning { color: #7c3b00; border-color: #cf9a62; }
 .logout-warning .text-button { margin-top: 8px; }
+
+.section-heading, .property-actions, .property-pagination { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; }
+.section-heading { justify-content: space-between; margin-bottom: 24px; }
+.section-heading h1 { margin: 0; }
+.property-page h2 { font-size: 24px; font-weight: 700; margin-bottom: 16px; }
+.property-registration, .property-filters { margin: 24px 0; }
+.property-price-fields { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+.form-field textarea, .form-field select { width: 100%; border: 1px solid #7c8a9e; border-radius: 6px; padding: 10px 12px; background: #fff; }
+.form-field textarea:focus-visible, .form-field select:focus-visible { outline: 3px solid #2563eb; outline-offset: 2px; }
+.checkbox-label { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+.checkbox-label input { width: 18px; height: 18px; }
+.property-actions .text-button { margin: 0; }
+.tag-list { display: flex; flex-wrap: wrap; list-style: none; gap: 8px; padding: 0; margin: 16px 0; }
+.tag-list li { background: #edf2f9; border-radius: 6px; padding: 4px 10px; overflow-wrap: anywhere; }
+.tag-list button { cursor: pointer; }
+.property-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 20px; list-style: none; margin: 20px 0; padding: 0; }
+.property-card { padding: 24px; min-width: 0; overflow-wrap: anywhere; }
+.property-card h3 { font-size: 22px; font-weight: 600; margin-bottom: 8px; }
+.property-price { font-size: 20px; font-weight: 600; margin: 12px 0; }
+.property-description { white-space: pre-wrap; }
+.delete-dialog { margin: auto; max-width: min(600px, calc(100% - 32px)); border: 1px solid #dbe2ed; border-radius: 12px; padding: 28px; color: #24334a; background: #fff; }
+.delete-dialog::backdrop { background: #0f172a99; }
+.delete-dialog .property-actions { margin-top: 24px; }
+@media (max-width: 480px) { .property-price-fields { grid-template-columns: 1fr; gap: 0; } }

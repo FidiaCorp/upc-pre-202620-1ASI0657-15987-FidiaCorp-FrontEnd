@@ -102,3 +102,15 @@ antes de publicar se deberá resolver el licenciamiento de esa dependencia.
 También se comprobaron mediante renderizado en servidor siete navegaciones:
 la redirección inicial, las cinco secciones y una ruta desconocida. Se verificaron
 encabezados, títulos y enlaces activos. No se realizó una revisión visual en navegador.
+
+## Catálogo inmobiliario
+
+`/realState` consulta `GET /properties` con búsqueda por texto, etiquetas separadas
+por coma (todas deben cumplirse), filtro de propios y paginación de 20 registros.
+Retirar una etiqueta o limpiar filtros actualiza la consulta. El registro usa
+`POST /properties`; título, dirección, precio y moneda son obligatorios. El precio
+viaja como string decimal y se muestra sin convertirlo a Number, conservando hasta
+16 dígitos enteros y 2 decimales. Solo se muestra Eliminar para el propietario
+identificado por `/users/me`; la API vuelve a comprobar el permiso. Cancelar el
+diálogo no envía DELETE. Confirmar llama `DELETE /properties/{id}` y recarga el
+listado conservando filtros y una página válida. Esta tarea no incorpora edición.
