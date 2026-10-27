@@ -16,10 +16,11 @@ function readSession() {
 }
 
 const initial = readSession()
-export const session = reactive({ token: initial?.token || null, expiresAt: initial?.expiresAt || 0, user: null })
+export const session = reactive({ token: initial?.token || null, expiresAt: initial?.expiresAt || 0, user: null, generation: 0, ending: false })
 
 export function clearSession() {
   clearTimeout(expiryTimer)
+  session.generation += 1
   session.token = null
   session.expiresAt = 0
   session.user = null
@@ -35,14 +36,17 @@ function scheduleExpiry() {
 }
 
 export function isAuthenticated() {
+  if (session.ending) return false
   if (session.token && session.expiresAt <= Date.now()) clearSession()
   return Boolean(session.token)
 }
 
 export function startSession(auth) {
+  if (session.ending) throw new Error('Espera a que termine el cierre de sesión.')
   if (typeof auth.token !== 'string' || !auth.token || !Number.isFinite(auth.expiresIn) || auth.expiresIn <= 0) {
     throw new Error('La respuesta de acceso no contiene una sesión válida.')
   }
+  session.generation += 1
   session.token = auth.token
   session.expiresAt = Date.now() + auth.expiresIn
   session.user = { email: auth.email, roles: auth.roles }
