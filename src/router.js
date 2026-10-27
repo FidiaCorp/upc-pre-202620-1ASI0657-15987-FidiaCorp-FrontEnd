@@ -1,13 +1,2 @@
-import { createRouter, createWebHistory } from "vue-router";
-import Home from './shared/presentation/views/home.vue'
-
-const routes = [
-    {path: '/home', name: 'home', component: Home, meta: {title: 'Home'} }
-]
-
-const router = createRouter({
-    history: createWebHistory(import.meta.env.BASE_URL),
-    routes: routes
-});
-
-export default router;
+// Compatibility entry point: keep a single router instance for all imports.
+export { default } from './router/index.js'

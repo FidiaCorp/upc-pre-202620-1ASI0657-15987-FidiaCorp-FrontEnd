@@ -1,12 +1,8 @@
-<script setup>
-
-</script>
-
 <template>
-    <section class="pt-6 p-4">
-        <div class="flex flex-column gap-3">
-            <h1 class="text-4xl font-bold"> Pagina Home </h1>
-            <p class="m-0 line-height-3 "> Aqui se encontrara contenido.</p>
-        </div>
-    </section>
+  <section class="content-card" aria-labelledby="page-title">
+    <p class="eyebrow">FidiaCorp</p>
+    <h1 id="page-title">Inicio</h1>
+    <p>Bienvenido a FidiaCorp. Usa el menú para recorrer las secciones del proyecto.</p>
+    <p class="setup-note">Explora las secciones que estarán disponibles en las próximas entregas.</p>
+  </section>
 </template>
