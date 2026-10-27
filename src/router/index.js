@@ -1,10 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import SectionView from '../views/SectionView.vue'
 import Home from '../shared/presentation/views/home.vue'
 import NotFoundView from '../views/NotFoundView.vue'
 import AuthView from '../views/AuthView.vue'
 import ProfileView from '../views/ProfileView.vue'
 import PropertiesView from '../views/PropertiesView.vue'
+import OffersView from '../views/OffersView.vue'
+import OfferDetailView from '../views/OfferDetailView.vue'
+import NotificationsView from '../views/NotificationsView.vue'
 import { isAuthenticated } from '../account/session.js'
 import { safeRedirect } from '../account/validation.js'
 import { navigation } from './navigation'
@@ -15,11 +17,13 @@ const router = createRouter({
     { path: '/', redirect: '/home' },
     { path: '/login', name: 'login', component: AuthView, meta: { title: 'Ingresar', guestOnly: true } },
     { path: '/register', name: 'register', component: AuthView, meta: { title: 'Crear cuenta', guestOnly: true } },
-    ...navigation.map(({ path, name, title, description }) => ({
+    { path: '/products', redirect: '/offers' },
+    { path: '/messaging', redirect: '/notifications' },
+    { path: '/offers/:id', name: 'offer-detail', component: OfferDetailView, meta: { title: 'Detalle de oferta', requiresAuth: true } },
+    ...navigation.map(({ path, name, title }) => ({
       path,
       name,
-      component: name === 'home' ? Home : name === 'profile' ? ProfileView : name === 'real-estate' ? PropertiesView : SectionView,
-      props: ['home', 'profile', 'real-estate'].includes(name) ? false : { title, description },
+      component: { home: Home, profile: ProfileView, 'real-estate': PropertiesView, offers: OffersView, notifications: NotificationsView }[name],
       meta: { title, requiresAuth: name !== 'home' },
     })),
     { path: '/:pathMatch(.*)*', component: NotFoundView, meta: { title: 'Página no encontrada' } },

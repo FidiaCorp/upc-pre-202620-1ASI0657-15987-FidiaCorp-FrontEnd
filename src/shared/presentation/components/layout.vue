@@ -1,4 +1,5 @@
 <script setup>
+import NotificationCenter from '../../../notifications/NotificationCenter.vue'
 import LogoutButton from '../../../account/LogoutButton.vue'
 import { logoutState, retryLogout } from '../../../account/logout.js'
 import { session } from '../../../account/session.js'
@@ -14,7 +15,7 @@ import { navigation } from '../../../router/navigation'
           <RouterLink class="brand" to="/home" aria-label="FidiaCorp, inicio">FidiaCorp</RouterLink>
         </template>
         <template #end>
-          <div v-if="session.token" class="header-account"><span class="version-label">{{ session.user?.email || 'Sesión activa' }}</span><LogoutButton /></div>
+          <div v-if="session.token" class="header-account"><span class="version-label">{{ session.user?.email || 'Sesión activa' }}</span><NotificationCenter /><LogoutButton /></div>
           <RouterLink v-else class="text-link" to="/login">Ingresar</RouterLink>
         </template>
       </pv-toolbar>
