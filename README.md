@@ -114,3 +114,22 @@ viaja como string decimal y se muestra sin convertirlo a Number, conservando has
 identificado por `/users/me`; la API vuelve a comprobar el permiso. Cancelar el
 diálogo no envía DELETE. Confirmar llama `DELETE /properties/{id}` y recarga el
 listado conservando filtros y una página válida. Esta tarea no incorpora edición.
+
+## Ofertas y notificaciones
+
+`/offers` lista ofertas recibidas; `/offers/:id` consulta su detalle autorizado.
+`/notifications` lista avisos, permite filtrar sin leer y marcarlos como leídos.
+Los accesos anteriores `/products` y `/messaging` redirigen a esas páginas.
+Todos estos datos requieren sesión y los permisos se comprueban en el backend.
+Las propuestas se identifican como **DEMO**: no acreditan aprobación bancaria.
+Los importes y porcentajes se formatean desde strings sin convertir a Number.
+La emisión de ofertas se realiza mediante la API autorizada para REALTOR; esta
+interfaz no incorpora emisión ni enlaces a cronogramas todavía no disponibles.
+
+Un único feed del encabezado consulta `/notifications` cada 5 segundos, después
+de terminar la consulta previa, mientras la pestaña esté visible y autenticada.
+El badge muestra `unreadCount` total y los avisos nuevos generan un mensaje en la
+aplicación. Al ocultar la pestaña se pausa; al volver se consulta inmediatamente.
+Al cerrar sesión o desmontar se detiene y limpia. Las respuestas antiguas no
+pueden restaurar avisos de otra sesión ni revertir una marca de lectura.
+Un error de red se informa y se puede reintentar; el polling también reintenta.
