@@ -33,6 +33,9 @@ La auditoría detecta vulnerabilidades conocidas y no garantiza ausencia de malw
 base se definen en `src/style.css`, que también importa Tailwind mediante su
 plugin de Vite. No se requieren plugins de traducción ni de estado para esta etapa.
 
+La instancia del router se define en `src/router/index.js`; `src/router.js` la
+reexporta por compatibilidad. Inicio utiliza la vista
+`src/shared/presentation/views/home.vue` integrada desde `develop`.
 Los destinos están centralizados en `src/router/navigation.js`:
 
 | Ruta | Sección |

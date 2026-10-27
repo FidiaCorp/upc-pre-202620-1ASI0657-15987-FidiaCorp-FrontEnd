@@ -2,7 +2,7 @@ import { createApp } from 'vue'
 import PrimeVue from 'primevue/config'
 import Toolbar from 'primevue/toolbar'
 import App from './App.vue'
-import router from './router'
+import router from './router/index.js'
 import './style.css'
 
 createApp(App)

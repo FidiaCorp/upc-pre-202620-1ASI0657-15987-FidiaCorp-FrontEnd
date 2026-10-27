@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import SectionView from '../views/SectionView.vue'
+import Home from '../shared/presentation/views/home.vue'
 import NotFoundView from '../views/NotFoundView.vue'
 import { navigation } from './navigation'
 
@@ -10,8 +11,8 @@ const router = createRouter({
     ...navigation.map(({ path, name, title, description }) => ({
       path,
       name,
-      component: SectionView,
-      props: { title, description, isHome: name === 'home' },
+      component: name === 'home' ? Home : SectionView,
+      props: name === 'home' ? false : { title, description },
       meta: { title },
     })),
     { path: '/:pathMatch(.*)*', component: NotFoundView, meta: { title: 'Página no encontrada' } },
