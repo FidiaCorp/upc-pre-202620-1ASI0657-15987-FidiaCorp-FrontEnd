@@ -62,3 +62,13 @@ p { line-height: 1.7; max-width: 72ch; }
 .primary-button:disabled, fieldset:disabled .primary-button { opacity: .65; cursor: wait; }
 .primary-button:focus-visible { outline: 3px solid #2563eb; outline-offset: 3px; }
 .site-toolbar .text-link { margin-top: 0; }
+
+.two-factor-settings { margin-top: 36px; padding-top: 28px; border-top: 1px solid #dbe2ed; }
+.two-factor-settings h2 { font-size: 24px; font-weight: 700; margin-bottom: 16px; }
+.two-factor-settings fieldset { margin-top: 20px; }
+.setup-details { margin-top: 20px; }
+.setup-secret, .setup-uri { display: block; overflow-wrap: anywhere; margin: 12px 0; padding: 12px; background: #edf2f9; border-radius: 6px; }
+.setup-details summary { cursor: pointer; }
+.text-button { display: inline-block; margin-top: 20px; color: #174b85; text-decoration: underline; cursor: pointer; background: none; border: 0; }
+.text-button:disabled { opacity: .6; cursor: wait; }
+.text-button:focus-visible, summary:focus-visible { outline: 3px solid #2563eb; outline-offset: 3px; }

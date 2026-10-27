@@ -66,8 +66,17 @@ El cliente usa `/auth/register`, `/auth/login` y `/users/me` (GET/PUT). Los toke
 se guardan en `sessionStorage` de la pestaña; nunca se guardan contraseñas. La
 expiración o un 401 de una petición autenticada elimina la sesión y solicita
 reingreso. Perfil permite actualizar nombres, apellidos y correo; los roles se
-asignan en el backend. El segundo factor y el cierre de sesión se incorporarán en
-sus tareas posteriores.
+asignan en el backend. El cierre de sesión se incorporará en su tarea posterior.
+
+En Perfil se puede consultar, activar o desactivar el segundo factor TOTP. El
+backend necesita `TWO_FACTOR_ENCRYPTION_KEY` configurada (véase su README).
+La clave manual y la URI se muestran solo durante la configuración, sin QR ni
+servicios externos; no se guardan en el navegador. La configuración vence en
+10 minutos. Un código incorrecto o vencido no activa la función. Los códigos
+son de un solo uso: espera al siguiente intervalo de 30 segundos después de
+confirmar, ingresar o desactivar. Al ingresar, el código se solicita después
+de validar correo y contraseña; no se inicia sesión hasta completar ambos pasos.
+Los límites de intentos se presentan con el tiempo de espera que indica la API.
 
 Para pruebas unitarias sin dependencias adicionales: `node --test tests/*.test.js`.
 
