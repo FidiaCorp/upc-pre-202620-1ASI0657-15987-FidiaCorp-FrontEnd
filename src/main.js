@@ -1,34 +1,12 @@
 import { createApp } from 'vue'
-import './style.css'
+import PrimeVue from 'primevue/config'
+import Toolbar from 'primevue/toolbar'
 import App from './App.vue'
-import {
-    Button,
-    Column,
-    ConfirmationService,
-    ConfirmDialog,
-    DataTable,
-    FloatLabel,
-    InputText,
-    Select,
-    SelectButton,
-    Textarea,
-    Toolbar
-} from "primevue";
+import router from './router'
+import './style.css'
 
 createApp(App)
-    .use(i18n)
-    .use(router)
-    .use(pinia)
-    .use(PrimeVue, {theme: {preset: Material}, ripple: true})
-    .use(ConfirmationService)
-    .component('pv-button',         Button)
-    .component('pv-column',         Column)
-    .component('pv-confirm-dialog', ConfirmDialog)
-    .component('pv-data-table',     DataTable)
-    .component('pv-float-label',    FloatLabel)
-    .component('pv-input-text',     InputText)
-    .component('pv-select',         Select)
-    .component('pv-select-button',  SelectButton)
-    .component('pv-textarea',       Textarea)
-    .component('pv-toolbar',        Toolbar)
-    .mount('#app')
+  .use(router)
+  .use(PrimeVue, { unstyled: true })
+  .component('pv-toolbar', Toolbar)
+  .mount('#app')
