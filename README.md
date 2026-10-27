@@ -47,15 +47,30 @@ Los destinos están centralizados en `src/router/navigation.js`:
 | `/profile` | Perfil |
 
 La ruta `/` redirige a `/home`. Las rutas desconocidas muestran una página 404
-con enlace al inicio. Las secciones son vistas iniciales; la autenticación, los
-inmuebles, las notificaciones y las simulaciones se integrarán en sus tareas.
+con enlace al inicio. Inicio es público. `/login` y `/register` permiten ingresar y crear una cuenta.
+Las otras secciones requieren sesión; Perfil consulta y actualiza los datos de la API.
+Inmuebles, mensajería y productos conservan sus vistas iniciales.
 
 El router utiliza historial HTML5 y respeta la base de Vite. En el servidor de
 publicación se debe devolver `index.html` para rutas de la aplicación que no
 correspondan a archivos, para permitir abrir y recargar enlaces directamente.
 
-El backend no es necesario para arrancar esta base. La API local prevista es
-`http://localhost:8080/api/v1`; aún no hay cliente HTTP ni llamadas al servidor.
+## API y cuentas
+
+El frontend puede arrancar sin backend; registro, ingreso y perfil necesitan la API.
+Crea `.env.local` con `VITE_API_BASE_URL=http://localhost:8080/api/v1`
+(valor predeterminado) y reinicia Vite. En producción configura esa variable antes
+de compilar. El backend debe permitir el origen del frontend mediante CORS.
+
+El cliente usa `/auth/register`, `/auth/login` y `/users/me` (GET/PUT). Los tokens
+se guardan en `sessionStorage` de la pestaña; nunca se guardan contraseñas. La
+expiración o un 401 de una petición autenticada elimina la sesión y solicita
+reingreso. Perfil permite actualizar nombres, apellidos y correo; los roles se
+asignan en el backend. El segundo factor y el cierre de sesión se incorporarán en
+sus tareas posteriores.
+
+Para pruebas unitarias sin dependencias adicionales: `node --test tests/*.test.js`.
+
 
 ## Validación de la configuración inicial
 

@@ -45,3 +45,20 @@ p { line-height: 1.7; max-width: 72ch; }
   .site-navigation { padding-inline: 16px; }
   .main-content { padding: 24px 16px; }
 }
+
+.account-card { max-width: 680px; }
+.account-form { margin-top: 24px; }
+.account-form fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.form-field { margin-bottom: 20px; }
+.form-field label { display: block; font-weight: 600; margin-bottom: 6px; }
+.form-field input { width: 100%; border: 1px solid #7c8a9e; border-radius: 6px; padding: 10px 12px; background: #fff; color: #24334a; }
+.form-field input:focus-visible { outline: 3px solid #2563eb; outline-offset: 2px; }
+.form-field input[aria-invalid="true"] { border-color: #a52121; }
+.form-field input:disabled { background: #edf2f9; }
+.field-error, .form-error { color: #a52121; margin-top: 8px; }
+.field-help { font-size: 14px; color: #56647a; margin-top: 6px; }
+.success-message { color: #166534; margin-top: 16px; }
+.primary-button { background: #174b85; color: #fff; border: 0; border-radius: 6px; padding: 12px 20px; font-weight: 600; cursor: pointer; }
+.primary-button:disabled, fieldset:disabled .primary-button { opacity: .65; cursor: wait; }
+.primary-button:focus-visible { outline: 3px solid #2563eb; outline-offset: 3px; }
+.site-toolbar .text-link { margin-top: 0; }
