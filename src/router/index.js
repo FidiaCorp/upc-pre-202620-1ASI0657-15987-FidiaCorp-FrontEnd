@@ -7,6 +7,7 @@ import PropertiesView from '../views/PropertiesView.vue'
 import OffersView from '../views/OffersView.vue'
 import OfferDetailView from '../views/OfferDetailView.vue'
 import NotificationsView from '../views/NotificationsView.vue'
+import SimulationView from '../views/SimulationView.vue'
 import { isAuthenticated } from '../account/session.js'
 import { safeRedirect } from '../account/validation.js'
 import { navigation } from './navigation'
@@ -23,7 +24,7 @@ const router = createRouter({
     ...navigation.map(({ path, name, title }) => ({
       path,
       name,
-      component: { home: Home, profile: ProfileView, 'real-estate': PropertiesView, offers: OffersView, notifications: NotificationsView }[name],
+      component: { home: Home, profile: ProfileView, 'real-estate': PropertiesView, offers: OffersView, notifications: NotificationsView, simulations: SimulationView }[name],
       meta: { title, requiresAuth: name !== 'home' },
     })),
     { path: '/:pathMatch(.*)*', component: NotFoundView, meta: { title: 'Página no encontrada' } },

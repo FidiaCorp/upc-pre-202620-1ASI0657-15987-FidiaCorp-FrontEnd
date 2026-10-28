@@ -1,6 +1,7 @@
 <script setup>
 import { onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import OfferSchedule from '../simulations/OfferSchedule.vue'
 import { getOffer } from '../offers/api.js'
 import { formatPrice } from '../properties/model.js'
 import { formatDate, formatRate } from '../offers/format.js'
@@ -29,6 +30,7 @@ onUnmounted(() => { disposed = true; sequence++ })
     <template v-else-if="offer">
       <h2>{{ offer.title }}</h2>
       <dl class="offer-details"><dt>Banco de referencia</dt><dd>{{ offer.bankName }}</dd><dt>Inmueble</dt><dd>{{ offer.property.title }} — {{ offer.property.address }}</dd><dt>Precio del inmueble al emitir</dt><dd>{{ formatPrice(offer.property.price, offer.property.currency) }}</dd><dt>Importe del crédito</dt><dd>{{ formatPrice(offer.loanAmount, offer.currency) }}</dd><dt>Tasa efectiva anual</dt><dd>{{ formatRate(offer.annualInterestRate) }}</dd><dt>Plazo</dt><dd>{{ offer.termMonths }} meses</dd><dt>Fecha inicial</dt><dd>{{ formatDate(offer.startDate) }}</dd><dt>Registrada el</dt><dd>{{ formatDate(offer.createdAt) }}</dd></dl>
+      <OfferSchedule :offer-id="offer.id" />
     </template>
     <RouterLink class="text-link" to="/offers">Volver a ofertas recibidas</RouterLink>
   </section>

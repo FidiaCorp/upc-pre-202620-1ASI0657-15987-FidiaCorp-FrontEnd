@@ -124,7 +124,7 @@ Todos estos datos requieren sesión y los permisos se comprueban en el backend.
 Las propuestas se identifican como **DEMO**: no acreditan aprobación bancaria.
 Los importes y porcentajes se formatean desde strings sin convertir a Number.
 La emisión de ofertas se realiza mediante la API autorizada para REALTOR; esta
-interfaz no incorpora emisión ni enlaces a cronogramas todavía no disponibles.
+interfaz no incorpora emisión; el detalle permite consultar y generar su cronograma.
 
 Un único feed del encabezado consulta `/notifications` cada 5 segundos, después
 de terminar la consulta previa, mientras la pestaña esté visible y autenticada.
@@ -133,3 +133,29 @@ aplicación. Al ocultar la pestaña se pausa; al volver se consulta inmediatamen
 Al cerrar sesión o desmontar se detiene y limpia. Las respuestas antiguas no
 pueden restaurar avisos de otra sesión ni revertir una marca de lectura.
 Un error de red se informa y se puede reintentar; el polling también reintenta.
+
+## Simulación y cronogramas
+
+`/simulations` permite calcular (`POST /simulations/calculate`) y recuperar por
+UUID (`GET /simulations/{id}`) simulaciones propias. El formulario envía meses,
+importes como strings y porcentajes convertidos exactamente a decimal; por
+ejemplo `8.123456 %` se envía como `"0.08123456"`. El préstamo no supera el valor
+del inmueble, el plazo es 1–360 meses y la TEA es mayor que 0 y hasta 100 %.
+La fecha inicial admite 1900–9990 y la última cuota no puede superar 9999.
+
+Opciones avanzadas: gracia parcial/total de 1–36 meses menor al plazo; balón
+positivo al vencimiento de hasta el préstamo; seguros mensuales y gastos por
+defecto cero; COK opcional (vacío usa TEA y cero es válido). El backend realiza
+las validaciones financieras definitivas. La interfaz no calcula cuotas ni
+recalcula métricas localmente. Con gracia total, amortización e intereses se
+solapan por capitalización: no se suman para inferir el costo total.
+
+Desde `/offers/:id` se consulta `GET /offers/{id}/schedule` y se genera o recupera
+con `POST` al mismo endpoint sin cuerpo ni términos adicionales. Se utilizan las
+instantáneas de la oferta DEMO con cero cargos y sin gracia ni balón. Ambos
+recorridos requieren sesión y la API verifica propiedad/destinatario; un 404 no
+revela recursos ajenos. Una respuesta incompleta, sin métricas/cuotas o con
+saldo final distinto de cero se rechaza y no se presenta como resultado válido.
+La tabla completa conserva fechas ISO (sin ajuste de zona horaria), todos los
+importes exactos, métricas con cero y VAN negativo. En móvil se desplaza la tabla
+horizontalmente con teclado o gesto táctil.
