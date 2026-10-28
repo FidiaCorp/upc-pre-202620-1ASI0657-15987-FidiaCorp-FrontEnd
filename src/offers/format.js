@@ -1,11 +1,12 @@
 export function formatRate(value) {
-  if (typeof value !== 'string' || !/^\d+(?:\.\d+)?$/.test(value)) return 'Tasa no disponible'
-  const [whole, fraction = ''] = value.split('.')
+  if (typeof value !== 'string' || ! /^-?\d+(?:\.\d+)?$/.test(value)) return 'Tasa no disponible'
+  const negative = value.startsWith('-')
+  const [whole, fraction = ''] = value.replace(/^-/, '').split('.')
   const digits = `${whole}${fraction.padEnd(2, '0')}`
   const scale = Math.max(0, fraction.length - 2)
   const integer = BigInt(digits).toString().padStart(scale + 1, '0')
   const result = scale ? `${integer.slice(0, -scale)}.${integer.slice(-scale)}`.replace(/0+$/, '').replace(/\.$/, '') : integer
-  return `${result} %`
+  return `${negative ? '-' : ''}${result} %`
 }
 export function formatDate(value) {
   if (!value) return 'No disponible'

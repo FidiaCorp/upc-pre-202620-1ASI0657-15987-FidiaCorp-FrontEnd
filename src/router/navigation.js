@@ -3,5 +3,6 @@ export const navigation = [
   { path: '/realState', name: 'real-estate', title: 'Inmobiliario', description: 'Próximamente podrás consultar y gestionar inmuebles.' },
   { path: '/notifications', name: 'notifications', title: 'Notificaciones' },
   { path: '/offers', name: 'offers', title: 'Ofertas recibidas' },
+  { path: '/simulations', name: 'simulations', title: 'Simular crédito' },
   { path: '/profile', name: 'profile', title: 'Perfil', description: 'Próximamente podrás consultar y actualizar tu perfil.' },
 ]
