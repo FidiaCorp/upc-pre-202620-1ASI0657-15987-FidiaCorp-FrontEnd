@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local browser acceptance artifacts (contain only disposable test data).
+/test-results/
+/playwright-report/
+/blob-report/

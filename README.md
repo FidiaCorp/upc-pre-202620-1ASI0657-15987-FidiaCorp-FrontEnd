@@ -159,3 +159,60 @@ saldo final distinto de cero se rechaza y no se presenta como resultado válido.
 La tabla completa conserva fechas ISO (sin ajuste de zona horaria), todos los
 importes exactos, métricas con cero y VAN negativo. En móvil se desplaza la tabla
 horizontalmente con teclado o gesto táctil.
+
+## Pruebas integradas contra la API real
+
+Requisitos: Java 21, Maven, Node.js y pnpm indicados arriba, y Chrome instalado.
+El backend debe estar disponible como repositorio hermano
+`../upc-pre-202620-1ASI0657-15987-FidiaCorp-backend`, con el fixture de pruebas de
+la tarea 15. Para otra ubicación local, establece `E2E_BACKEND_DIR`.
+No necesitas PostgreSQL, claves de producción ni un backend ya iniciado.
+
+```sh
+pnpm install --frozen-lockfile --ignore-scripts
+pnpm test:unit
+pnpm build
+pnpm test:e2e
+```
+
+`@playwright/test`, `playwright` y `playwright-core` están fijados en 1.64.1; se
+revisaron sus metadatos y no se ejecutan scripts de instalación. Se utiliza Chrome
+del equipo en un contexto de prueba aislado, sin abrir perfiles personales ni
+instalar un navegador automáticamente. Si tu ejecutable está en otra ubicación,
+configura `E2E_BROWSER_EXECUTABLE` con su ruta local.
+
+`test:e2e` compila las clases de prueba del backend y su classpath Maven, inicia
+`BrowserFixtureServer` en loopback con H2, claves y credenciales aleatorias, y lee
+su manifiesto privado 0600. Verifica el PID y rechaza URLs de API remotas. Luego
+inicia Vite en un puerto aleatorio con `VITE_API_BASE_URL` del fixture. No utiliza
+el backend de `.env.local` ni intercepta/responde solicitudes API desde Playwright.
+El runner de Playwright se invoca mediante el launcher; ejecutarlo directamente
+sin sus variables de entorno falla para evitar usar otro servidor accidentalmente.
+
+La configuración usa un trabajador, cero reintentos y datos únicos por escenario.
+Los seis recorridos verifican registro/perfil persistente (US01/US02), catálogo,
+filtros y cancelación/eliminación (US07/US08/US14), entrega de oferta mediante el
+polling real y lectura idempotente del aviso (US10), cronograma persistente desde
+la oferta y simulación directa (US11), aislamiento entre dos usuarios, revocación
+de una sesión sin cerrar la otra (US04), y activación/ingreso/desactivación TOTP
+real (US03). Este último espera los siguientes intervalos reales de 30 segundos;
+no altera el reloj ni simula códigos/respuestas del backend.
+
+Los procesos dedicados se detienen y el manifiesto se elimina tanto al terminar
+como ante error, timeout, SIGINT o SIGTERM. Las pruebas unitarias del launcher
+cubren éxito, error, señal ya recibida, cierre prematuro, timeout y validación del
+manifiesto. Un fallo conserva un log privado del fixture para diagnóstico en
+`test-results/backend-fixture.log`; no imprime credenciales. Los resultados y
+reportes se ignoran en Git. Capturas, trazas y vídeos están desactivados para no
+persistir visualmente las claves TOTP temporales; cualquier diagnóstico local de
+fallo sigue siendo privado y no debe publicarse como evidencia sin revisión.
+
+Para ejecutar un caso específico, se pasan argumentos al runner:
+
+```sh
+pnpm test:e2e --grep "catálogo real"
+```
+
+El launcher no modifica el código del backend: genera únicamente sus artefactos
+Maven de prueba y bases H2 efímeras. No se incluyen fixture ni credenciales en la
+compilación de producción del frontend.
