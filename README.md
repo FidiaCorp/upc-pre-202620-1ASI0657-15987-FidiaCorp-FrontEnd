@@ -1,6 +1,6 @@
 # FidiaCorp — aplicación web
 
-Base del cliente web con Vue, Vue Router, PrimeVue y Tailwind CSS sobre Vite.
+Cliente web con Vue, Vue Router y Tailwind CSS sobre Vite. El encabezado y los formularios usan HTML/CSS propios.
 
 ## Requisitos
 
@@ -19,7 +19,7 @@ La instalación utiliza `pnpm-lock.yaml`; no se requiere npm ni npx. Los scripts
 propios del proyecto se ejecutan explícitamente con los comandos siguientes.
 
 ```sh
-pnpm build
+VITE_API_BASE_URL=/api/v1 pnpm build
 pnpm preview
 pnpm audit
 ```
@@ -29,9 +29,10 @@ La auditoría detecta vulnerabilidades conocidas y no garantiza ausencia de malw
 
 ## Configuración inicial y navegación
 
-`src/main.js` registra Vue Router y PrimeVue en modo unstyled. Los estilos de la
-base se definen en `src/style.css`, que también importa Tailwind mediante su
-plugin de Vite. No se requieren plugins de traducción ni de estado para esta etapa.
+`src/main.js` registra Vue Router. Los estilos se definen en `src/style.css`,
+que también importa Tailwind mediante su plugin de Vite. El encabezado usa HTML
+nativo; PrimeVue y sus dependencias se retiraron por completo al no ser necesarios.
+No se configura ni se simula una licencia, ni se modifican avisos de terceros.
 
 La instancia del router se define en `src/router/index.js`; `src/router.js` la
 reexporta por compatibilidad. Inicio utiliza la vista
@@ -42,14 +43,17 @@ Los destinos están centralizados en `src/router/navigation.js`:
 | --- | --- |
 | `/home` | Inicio |
 | `/realState` | Inmobiliario |
-| `/messaging` | Mensajería |
-| `/products` | Mis productos |
+| `/offers` | Ofertas recibidas y detalle `/offers/:id` |
+| `/notifications` | Notificaciones |
+| `/simulations` | Simulación y recuperación de cronograma |
 | `/profile` | Perfil |
 
 La ruta `/` redirige a `/home`. Las rutas desconocidas muestran una página 404
 con enlace al inicio. Inicio es público. `/login` y `/register` permiten ingresar y crear una cuenta.
 Las otras secciones requieren sesión; Perfil consulta y actualiza los datos de la API.
-Inmuebles, mensajería y productos conservan sus vistas iniciales.
+Inmuebles, ofertas, notificaciones, perfil y simulaciones se conectan a la API.
+`/products` y `/messaging` conservan compatibilidad mediante redirecciones a
+`/offers` y `/notifications`.
 
 El router utiliza historial HTML5 y respeta la base de Vite. En el servidor de
 publicación se debe devolver `index.html` para rutas de la aplicación que no
@@ -58,9 +62,11 @@ correspondan a archivos, para permitir abrir y recargar enlaces directamente.
 ## API y cuentas
 
 El frontend puede arrancar sin backend; registro, ingreso y perfil necesitan la API.
-Crea `.env.local` con `VITE_API_BASE_URL=http://localhost:8080/api/v1`
-(valor predeterminado) y reinicia Vite. En producción configura esa variable antes
-de compilar. El backend debe permitir el origen del frontend mediante CORS.
+Crea `.env.development.local` con `VITE_API_BASE_URL=http://localhost:8080/api/v1`
+(valor predeterminado en desarrollo) y reinicia Vite. Al compilar se exige un
+valor explícito y válido; consulta la sección de despliegue. Todos los valores
+`VITE_*` son públicos: nunca deben contener contraseñas, claves JWT o secretos
+2FA. Si la API está en otro origen, el backend debe permitir ese origen con CORS.
 
 El cliente usa `/auth/register`, `/auth/login` y `/users/me` (GET/PUT). Los tokens
 se guardan en `sessionStorage` de la pestaña; nunca se guardan contraseñas. La
@@ -95,13 +101,9 @@ la compilación de producción y las respuestas HTTP del servidor local fueron
 comprobadas con Node.js 24.22.1 y pnpm 12.15.0. La auditoría realizada el
 27 de octubre de 2026 no reportó vulnerabilidades conocidas.
 
-PrimeVue 5.0.2, ya declarado en el proyecto, emite un aviso de licencia PrimeUI
-no configurada y puede mostrar un banner. Esta tarea no incorpora una licencia;
-antes de publicar se deberá resolver el licenciamiento de esa dependencia.
-
-También se comprobaron mediante renderizado en servidor siete navegaciones:
-la redirección inicial, las cinco secciones y una ruta desconocida. Se verificaron
-encabezados, títulos y enlaces activos. No se realizó una revisión visual en navegador.
+La tarea 19 retiró PrimeVue, cuyo único uso era el contenedor del encabezado.
+La navegación conserva enlaces, accesibilidad y estilos propios sin requerir una
+clave de licencia. La suite integrada de Chrome verifica los recorridos reales.
 
 ## Catálogo inmobiliario
 
@@ -171,7 +173,7 @@ No necesitas PostgreSQL, claves de producción ni un backend ya iniciado.
 ```sh
 pnpm install --frozen-lockfile --ignore-scripts
 pnpm test:unit
-pnpm build
+VITE_API_BASE_URL=/api/v1 pnpm build
 pnpm test:e2e
 ```
 
@@ -185,7 +187,7 @@ configura `E2E_BROWSER_EXECUTABLE` con su ruta local.
 `BrowserFixtureServer` en loopback con H2, claves y credenciales aleatorias, y lee
 su manifiesto privado 0600. Verifica el PID y rechaza URLs de API remotas. Luego
 inicia Vite en un puerto aleatorio con `VITE_API_BASE_URL` del fixture. No utiliza
-el backend de `.env.local` ni intercepta/responde solicitudes API desde Playwright.
+el backend de `.env*.local` ni intercepta/responde solicitudes API desde Playwright.
 El runner de Playwright se invoca mediante el launcher; ejecutarlo directamente
 sin sus variables de entorno falla para evitar usar otro servidor accidentalmente.
 
@@ -216,3 +218,81 @@ pnpm test:e2e --grep "catálogo real"
 El launcher no modifica el código del backend: genera únicamente sus artefactos
 Maven de prueba y bases H2 efímeras. No se incluyen fixture ni credenciales en la
 compilación de producción del frontend.
+
+## Entornos y despliegue estático
+
+La configuración de la API se incorpora al JavaScript **al compilar**. Cambiar
+una variable del servidor después de copiar `dist/` no cambia un build existente:
+modifica la variable y vuelve a compilar. Nunca se incluyen secretos en `.env`,
+variables `VITE_*` ni el código del navegador; las claves del backend permanecen
+solo en su entorno de servidor.
+
+- Desarrollo: `.env.development` contiene `http://localhost:8080/api/v1`.
+  `.env.example` se puede copiar a `.env.development.local` para personalizarlo
+  sin aplicar ese valor a producción.
+- Producción: copia `.env.production.example` a `.env.production.local` y ajusta
+  el valor, o suministra `VITE_API_BASE_URL` desde el entorno de build.
+  Los archivos `*.local` se ignoran en Git.
+- Se acepta `/api/v1` para un proxy del mismo origen o una URL HTTPS terminada
+  en `/api/v1`. HTTP solo se permite para loopback local (`localhost`, IPv4
+  127.0.0.0/8 o `::1`). Se rechazan credenciales, query, fragmentos, espacios y
+  rutas distintas. Una API ausente o inválida impide el build; producción no
+  utiliza un fallback implícito a localhost. Evita poner ajustes de desarrollo
+  en `.env.local`, porque Vite carga ese archivo en todos los modos.
+
+```sh
+# Mismo origen: requiere configurar el proxy /api/ del host.
+VITE_API_BASE_URL=/api/v1 pnpm build
+# Otro origen: sustituye este dominio de ejemplo por la API real.
+VITE_API_BASE_URL=https://api.example.com/api/v1 pnpm build
+# Revisión local del build; no es el servidor de producción.
+pnpm preview --host 127.0.0.1
+```
+
+Publica únicamente el contenido de `dist/`. No copies `.env*`, `node_modules`,
+fuentes, manifiestos de prueba ni credenciales a la raíz web. El ejemplo
+[`deploy/nginx.conf`](deploy/nginx.conf) sirve esa carpeta en el puerto 8080:
+
+1. Copia `dist/` a `/usr/share/nginx/html` (o ajusta `root`) e instala la
+   configuración en un servidor Nginx local que administres.
+2. Revisa la configuración con `nginx -t` y reinicia/recarga tu servicio.
+3. Termina TLS en Nginx o en el proxy frontal para publicar mediante HTTPS.
+   El ejemplo escucha HTTP para uso interno/local y no incorpora certificados.
+
+Nginx devuelve `index.html` para enlaces SPA como `/offers/:id`, `/profile` y
+`/simulations`, permitiendo abrirlos o recargarlos directamente. El HTML no se
+cachea (`no-store`); los assets con hash de Vite usan un año de caché e
+`immutable`. Un asset inexistente y cualquier `/api/` sin proxy devuelven 404;
+nunca se ocultan errores API con el HTML de la aplicación.
+
+Con una API HTTPS de otro origen, conserva el bloque `/api/` de ejemplo (404) y
+configura en el backend `CORS_ALLOWED_ORIGINS` con el origen HTTPS exacto de la
+web. `Authorization` y `Retry-After` son necesarios para el cliente. No se usan
+cookies ni claves privadas en el frontend.
+
+Para **mismo origen**, sustituye únicamente el bloque `location ^~ /api/` del
+archivo por un reverse proxy a la API que administras:
+
+```nginx
+location ^~ /api/ {
+    proxy_pass http://credicasa-backend:8080;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header Authorization $http_authorization;
+    proxy_cache off;
+}
+```
+
+`proxy_pass` sin sufijo conserva `/api/v1` completo. `credicasa-backend:8080`
+es el servicio de Compose del backend: este nombre solo resuelve si Nginx se
+conecta a la misma red, por lo que debes usar un upstream local alcanzable en tu
+instalación. En este caso puedes dejar `CORS_ALLOWED_ORIGINS` vacío; no se necesita
+un servicio externo de hosting. El backend tiene su propia configuración y
+requisitos de despliegue, descritos en su repositorio.
+
+Validación disponible: unidades, build con valores válidos e inválidos, rutas
+SPA y seis recorridos Chrome contra la API H2 real. Este entorno no dispone de
+Nginx ni Docker: el ejemplo se revisó estáticamente; no se afirma un arranque
+Nginx, una imagen Docker o un despliegue público ejecutado. La suite `test:e2e`
+sigue inyectando la API loopback de su fixture en Vite de desarrollo.

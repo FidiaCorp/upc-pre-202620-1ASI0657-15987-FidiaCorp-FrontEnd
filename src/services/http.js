@@ -1,6 +1,7 @@
+import { resolveApiBase } from '../config/api-base.js'
 import { clearSession, isAuthenticated, session } from '../account/session.js'
 
-const baseUrl = (import.meta.env?.VITE_API_BASE_URL || 'http://localhost:8080/api/v1').replace(/\/$/, '')
+const baseUrl = resolveApiBase(import.meta.env?.VITE_API_BASE_URL, { production: import.meta.env?.PROD === true })
 
 export class ApiError extends Error {
   constructor(message, status = 0, validationErrors = {}, code = null, retryAfter = 0) {
