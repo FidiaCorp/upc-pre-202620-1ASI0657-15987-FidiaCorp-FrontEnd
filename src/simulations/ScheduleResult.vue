@@ -1,11 +1,42 @@
 <script setup>
+import { ref } from 'vue'
 import { formatDate, formatRate } from '../offers/format.js'
 import { formatMoney, installmentFields, moneyMetrics, rateMetrics } from './model.js'
-defineProps({ result: { type: Object, required: true } })
+import { downloadSimulationXlsx } from './api.js'
+
+const props = defineProps({ result: { type: Object, required: true } })
+
+const downloading = ref(false)
+const downloadError = ref('')
+
+async function handleExportXlsx() {
+  if (!props.result.quotationId) return
+  downloading.value = true
+  downloadError.value = ''
+  try {
+    await downloadSimulationXlsx(props.result.quotationId)
+  } catch (err) {
+    downloadError.value = err.message || 'No se pudo descargar el archivo Excel.'
+  } finally {
+    downloading.value = false
+  }
+}
 </script>
 <template>
   <section class="schedule-result" aria-labelledby="schedule-title">
-    <h2 id="schedule-title">Cronograma de pagos</h2>
+    <div class="schedule-header">
+      <h2 id="schedule-title">Cronograma de pagos</h2>
+      <button
+        v-if="result.quotationId"
+        class="primary-button export-xlsx-btn"
+        type="button"
+        :disabled="downloading"
+        @click="handleExportXlsx"
+      >
+        {{ downloading ? 'Generando XLSX…' : 'Descargar cronograma (.xlsx)' }}
+      </button>
+    </div>
+    <p v-if="downloadError" class="form-error" role="alert">{{ downloadError }}</p>
     <p>Identificador para recuperar: <code class="quotation-id">{{ result.quotationId }}</code></p>
     <dl class="offer-details"><dt>Préstamo</dt><dd>{{ formatMoney(result.loanAmount, result.currency) }}</dd><dt>Valor del inmueble</dt><dd>{{ formatMoney(result.propertyValue, result.currency) }}</dd><dt>Plazo</dt><dd>{{ result.termMonths }} meses</dd><dt>Cuota mensual ordinaria estimada</dt><dd>{{ formatMoney(result.estimatedMonthlyInstallment, result.currency) }}</dd></dl>
     <h3>Métricas financieras</h3>
@@ -17,3 +48,18 @@ defineProps({ result: { type: Object, required: true } })
     </div>
   </section>
 </template>
+
+<style scoped>
+.schedule-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+.export-xlsx-btn {
+  font-size: 0.85rem;
+  padding: 0.4rem 0.8rem;
+}
+</style>
