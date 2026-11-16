@@ -54,6 +54,43 @@ export async function request(path, { method = 'GET', body, authenticated = true
   }
 }
 
+export async function downloadFile(path, filename, { authenticated = true } = {}) {
+  if (session.ending && authenticated) throw new ApiError('Espera a que termine el cierre de sesión.', 409, {}, 'SESSION_CHANGED')
+  if (authenticated && !isAuthenticated()) throw new ApiError('Tu sesión ha expirado. Ingresa nuevamente.', 401)
+  const token = authenticated ? session.token : null
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 30000)
+  try {
+    const response = await fetch(`${baseUrl}${path}`, {
+      method: 'GET',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      signal: controller.signal,
+    })
+    if (!response.ok) {
+      throw new ApiError(`Error al descargar archivo: ${response.statusText}`, response.status)
+    }
+    const blob = await response.blob()
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+    }
+    return blob
+  } catch (error) {
+    if (error instanceof ApiError) throw error
+    throw new ApiError(error.name === 'AbortError' ? 'La descarga tardó demasiado. Intenta nuevamente.' : 'No se pudo descargar el archivo. Comprueba tu conexión.')
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
 // The retained token can only be used to revoke that specific session.
 export async function revokeToken(token) {
   const controller = new AbortController()

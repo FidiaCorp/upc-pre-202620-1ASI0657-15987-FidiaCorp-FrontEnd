@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { getProfile } from '../account/api.js'
 import { session } from '../account/session.js'
 import { createProperty, deleteProperty, listProperties } from '../properties/api.js'
+import RegistryValidationBadge from '../properties/RegistryValidationBadge.vue'
 import { formatPrice, parseTags, propertyPayload, validateProperty, validateTags } from '../properties/model.js'
 
 const draft = reactive({ q: '', tags: '', mine: false })
@@ -191,6 +192,7 @@ onUnmounted(() => { disposed = true; requestSequence++; dialog.value?.close() })
         <ul class="property-grid">
           <li v-for="property in catalog.items" :key="property.id" class="content-card property-card">
             <h3>{{ property.title }}</h3><p>{{ property.address }}</p><p class="property-price">{{ formatPrice(property.price, property.currency) }}</p>
+            <RegistryValidationBadge :property="property" :can-verify="Boolean(ownId && property.ownerId === ownId)" @verified="load()" />
             <p v-if="property.description" class="property-description">{{ property.description }}</p>
             <ul v-if="property.tags.length" class="tag-list" aria-label="Etiquetas del inmueble"><li v-for="tag in property.tags" :key="tag">{{ tag }}</li></ul>
             <p v-if="ownId && property.ownerId === ownId" class="field-help">Tu inmueble</p>

@@ -3,6 +3,7 @@ import { onUnmounted, reactive, ref } from 'vue'
 import { calculateSimulation, getSimulation } from '../simulations/api.js'
 import { simulationDefaults, simulationPayload, validateSimulation, validUuid } from '../simulations/model.js'
 import ScheduleResult from '../simulations/ScheduleResult.vue'
+import AiMortgageAdvisor from '../simulations/AiMortgageAdvisor.vue'
 const form = reactive(simulationDefaults())
 const errors = ref({})
 const message = ref('')
@@ -75,5 +76,6 @@ onUnmounted(() => { disposed = true })
     </section>
     <section class="content-card simulation-recovery" aria-labelledby="recovery-title"><h2 id="recovery-title">Recuperar simulación</h2><form class="account-form" novalidate @submit.prevent="recover"><div class="form-field"><label for="simulation-id">Identificador de la simulación</label><input id="simulation-id" v-model="recoveryId" autocomplete="off" :disabled="busy" :aria-invalid="Boolean(recoveryError)" aria-describedby="recovery-error" /></div><button type="submit" class="primary-button" :disabled="busy">Recuperar cronograma</button><p v-if="recoveryError" id="recovery-error" class="form-error" role="alert">{{ recoveryError }}</p></form></section>
     <ScheduleResult v-if="result && !busy" :result="result" />
+    <AiMortgageAdvisor />
   </section>
 </template>
