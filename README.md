@@ -307,6 +307,20 @@ instalación. En este caso puedes dejar `CORS_ALLOWED_ORIGINS` vacío; no se nec
 un servicio externo de hosting. El backend tiene su propia configuración y
 requisitos de despliegue, descritos en su repositorio.
 
-Validación disponible: 56 pruebas unitarias, build de producción y 15 recorridos Chrome contra los
+### Azure Static Web Apps
+
+[`public/staticwebapp.config.json`](public/staticwebapp.config.json) se copia a
+`dist/` en cada build y reproduce en Azure Static Web Apps las reglas de
+`deploy/nginx.conf`: fallback SPA a `index.html` para las rutas del router,
+exclusión de `/assets/*`, `/images/*`, `/api/*` y archivos estáticos (un asset
+inexistente sigue siendo 404), `no-store` para `index.html`, caché `immutable`
+para los assets con hash y cabeceras `nosniff`, `Referrer-Policy`,
+`X-Frame-Options: DENY` y `Permissions-Policy`. Como la API está en otro origen
+(el gateway de Container Apps), compila con
+`VITE_API_BASE_URL=https://<gateway>/api/v1`; el CORS del gateway admite solo el
+hostname de la Static Web App del mismo despliegue (ver
+`infra/azure/README-AZURE-DEPLOY.md` del backend).
+
+Validación disponible: 65 pruebas unitarias, build de producción y 15 recorridos Chrome contra los
 microservicios reales detrás del API Gateway; la imagen Nginx se construye y queda `healthy` dentro del
 `docker-compose.yml` del backend.
