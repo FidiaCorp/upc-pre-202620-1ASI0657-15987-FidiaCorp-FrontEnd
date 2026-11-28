@@ -7,6 +7,7 @@ import { compoundingOptions, rateTypes, simulationDefaults, simulationPayload, v
 import SimulationHistory from '../simulations/SimulationHistory.vue'
 import ScheduleResult from '../simulations/ScheduleResult.vue'
 import AiMortgageAdvisor from '../simulations/AiMortgageAdvisor.vue'
+import BankRatesStatus from '../simulations/BankRatesStatus.vue'
 const form = reactive(simulationDefaults())
 // Prellenado opcional desde el catálogo ("Simular crédito"): solo si la URL trae los parámetros.
 const route = useRoute()
@@ -72,6 +73,7 @@ onUnmounted(() => { disposed = true })
         <p class="eyebrow">US19 · Método francés vencido</p>
         <h1 id="page-title">Simular crédito</h1>
         <p class="page-subtitle">Calcula tu cronograma con TEA o TNA, seguros, gracia y cuota balón.</p>
+        <BankRatesStatus />
       </div>
       <p class="comparator-link"><RouterLink class="secondary-button" to="/simulations/compare"><AppIcon name="compare" :size="16" />Comparar escenarios (US20)</RouterLink></p>
     </div>

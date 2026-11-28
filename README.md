@@ -321,6 +321,6 @@ para los assets con hash y cabeceras `nosniff`, `Referrer-Policy`,
 hostname de la Static Web App del mismo despliegue (ver
 `infra/azure/README-AZURE-DEPLOY.md` del backend).
 
-Validación disponible: 65 pruebas unitarias, build de producción y 15 recorridos Chrome contra los
+Validación disponible: 68 pruebas unitarias, build de producción y 15 recorridos Chrome contra los
 microservicios reales detrás del API Gateway; la imagen Nginx se construye y queda `healthy` dentro del
 `docker-compose.yml` del backend.
