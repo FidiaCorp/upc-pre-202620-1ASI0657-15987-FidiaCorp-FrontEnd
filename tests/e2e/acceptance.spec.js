@@ -1,5 +1,5 @@
-import { test, expect } from '@playwright/test'
-import { api, credentials, fixture, issueOffer, loginAPI, loginUI, logoutUI, nextOtpStep, otpFor, propertyAPI, registerAccount, unique } from './helpers.js'
+import { expect } from '@playwright/test'
+import { api, credentials, fixture, issueOffer, loginAPI, loginUI, logoutUI, nextOtpStep, otpFor, propertyAPI, registerAccount, unique, test } from './helpers.js'
 
 // All requests reach the real local H2 fixture: no route interception or API mocks.
 test('registro, errores de ingreso y perfil persistente después de cerrar sesión', async ({ page, request }) => {
@@ -149,7 +149,9 @@ test('simulación directa, métricas, recuperación y aislamiento de dos destina
   const property = await propertyAPI(request, advisor.token)
   const offer = await issueOffer(request, advisor.token, property.id, account.email, { termMonths: 24 })
   await api(request, 'get', `/offers/${offer.id}`, { token: otherAuth.token, status: 404 })
-  const ownedNotices = await api(request, 'get', '/notifications', { token })
+  // Etapa 2: el aviso llega de forma asíncrona (outbox de quotation → RabbitMQ → inbox de communication).
+  let ownedNotices
+  await expect.poll(async () => (ownedNotices = await api(request, 'get', '/notifications', { token })).items.length, { timeout: 20000 }).toBeGreaterThan(0)
   await api(request, 'patch', `/notifications/${ownedNotices.items[0].id}/read`, { token: otherAuth.token, status: 404 })
   const context = await browser.newContext({ baseURL: process.env.E2E_BASE_URL })
   try {

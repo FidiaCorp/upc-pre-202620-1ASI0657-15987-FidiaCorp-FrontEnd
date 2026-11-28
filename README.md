@@ -162,62 +162,78 @@ La tabla completa conserva fechas ISO (sin ajuste de zona horaria), todos los
 importes exactos, métricas con cero y VAN negativo. En móvil se desplaza la tabla
 horizontalmente con teclado o gesto táctil.
 
-## Pruebas integradas contra la API real
+## Sprint 3 alineado con los contratos reales (Etapa 1)
 
-Requisitos: Java 21, Maven, Node.js y pnpm indicados arriba, y Chrome instalado.
-El backend debe estar disponible como repositorio hermano
-`../upc-pre-202620-1ASI0657-15987-FidiaCorp-backend`, con el fixture de pruebas de
-la tarea 15. Para otra ubicación local, establece `E2E_BACKEND_DIR`.
-No necesitas PostgreSQL, claves de producción ni un backend ya iniciado.
+Todos los módulos usan los DTO reales del backend Spring Boot v1.3.0:
+
+| Historia | Módulo | Contrato |
+| --- | --- | --- |
+| US05/US06 | `src/subscriptions` | `GET /payments/gateways`, `POST /payments/checkout` (402 = rechazo con `declineCode` y reintento con otra pasarela) y `POST /payments/verify` con `{ transactionReference, paymentMethod, amount, currency, planName }`; se leen `planName`, `endDate`, `statusDescription` y `paymentCount`. |
+| US09 | `RegistryValidationBadge.vue` | `POST /properties/{id}/verify-registry` con `{ registryNumber, claimedOwner }`; badge desde `legitimacyStatus`/`certificateHash` de `PropertyResponse` (`VERIFIED_GENUINE`, `FLAGGED_ANOMALY`, `PENDING_VERIFICATION`). |
+| US12 | `OfferSchedule.vue`, `ScheduleResult.vue` | Botones de descarga `.xlsx` (simulación y oferta). |
+| US15 | `src/simulations/ai-api.js` | `{ monthlyIncome, downPaymentAvailable, currency, preferredDistrict, desiredTermYears, preferenceTags }`; lee `maxAllowableInstallment`, `evaluationSummary`, `relevanceScore`, `debtToIncomeRatioPercent`, `financiallyViable`, `recommendationReason`. |
+| US16–US18 | `src/messaging`, `PropertiesView.vue` | Conversaciones reales con UUID (`POST/GET /messages/conversations`, `GET …/{id}/messages`), botón «Contactar» en cada ficha ajena, mensajes enviados/recibidos, bloqueos con `blockId`/`blockedId` y exportación `.txt`/`.json` del UUID real. |
+
+`tests/contracts/sprint3-contracts.json` contiene respuestas **capturadas del backend real**
+(`FrontendContractFixturesTest`) y `tests/contracts/openapi-v1.3.0.json` el documento
+`/v3/api-docs` generado. `tests/sprint3-features.test.js` valida cada cuerpo enviado contra el
+esquema de request del OpenAPI y procesa exactamente esas respuestas. Para regenerarlos:
+`mvn test -Dtest=FrontendContractFixturesTest,OpenApiContractTest` en el backend y copiar
+`target/frontend-contracts/sprint3-contracts.json` y `target/openapi/generated.json`.
+
+## Sprint 4 (Etapa 2): US19–US22
+
+| Historia | Módulo | Contrato (vía API Gateway) |
+| --- | --- | --- |
+| US19 | `SimulationView.vue`, `src/simulations/model.js` | Selector **TEA/TNA** (`#sim-rateType`) y capitalización (`#sim-compounding`: 360, 365, 12, 4, 2, 1). Se envía `rateType` y, con TNA, `compoundingPeriodsPerYear`; el resultado muestra la tasa ingresada y la **TEA equivalente** (`rate.effectiveAnnualRate`, p. ej. TNA 12 % diaria → 12.747431 %). |
+| US20 | `SimulationHistory.vue`, `ScenarioComparatorView.vue` (`/simulations/compare`), `src/simulations/scenarios.js` | `GET /simulations?page&size` (historial propio, más recientes primero) y `POST /simulations/compare` con 2–3 escenarios (etiquetas únicas, misma moneda, prepago opcional `REDUCE_TERM`/`REDUCE_INSTALLMENT`); tabla lado a lado y mejor escenario por TCEA, intereses, cuota, VAN y costo total. |
+| US21 | `src/offers/QuotationVersions.vue`, `OfferVersionsView.vue` (`/offers/:id/versions`), `src/offers/versions.js` | `GET /offers/{id}/versions`, `GET /quotations/versions/{versionId}/verify` (integridad SHA-256 recalculada en el servidor, vigencia) y, solo para `ROLE_REALTOR` emisor, `POST /offers/{id}/versions` con campos opcionales heredados. |
+| US22 | `OfferSchedule.vue` («Exportar PDF»), `QuotationVersions.vue` | `GET /offers/{id}/schedule/export/pdf?version=n` (PDF desde el snapshot inmutable; 409 si el SHA-256 no coincide) y `GET /offers/{id}/exports` (historial de exportaciones). |
+
+`tests/contracts/sprint4-contracts.json` contiene respuestas **capturadas del stack docker compose** a través
+del gateway y `tests/contracts/openapi-v2-gateway.json` fusiona el OpenAPI generado por los 5 microservicios
+(`target/openapi/<módulo>.json` de `OpenApiContractTest`). `tests/sprint4-features.test.js` valida los payloads
+contra esos esquemas y procesa exactamente esas respuestas.
+
+## Contenedor
+
+`Dockerfile` multi-stage (`node:22-alpine` → `nginx:1.27-alpine`) compila con
+`VITE_API_BASE_URL=/api/v1` y sirve la SPA en `:80`. `deploy/nginx.conf` aplica el fallback
+`try_files $uri $uri/ /index.html` y reenvía `/api/` a **`http://api-gateway:8080`** (Etapa 2). El
+`docker-compose.yml` del backend construye este repositorio como servicio `credicasa-frontend`.
+
+## Pruebas integradas contra la API real (stack de microservicios)
+
+Requisitos: Node.js y pnpm indicados arriba, Chrome instalado y el stack del backend levantado con Docker
+(`docker compose up --build -d` en `../upc-pre-202620-1ASI0657-15987-FidiaCorp-backend`) **con
+`E2E_FIXTURE_TOKEN` definido**, que habilita el endpoint interno que promueve la cuenta desechable del asesor.
 
 ```sh
 pnpm install --frozen-lockfile --ignore-scripts
 pnpm test:unit
-VITE_API_BASE_URL=/api/v1 pnpm build
-pnpm test:e2e
+E2E_FIXTURE_TOKEN=<mismo valor que docker compose> pnpm test:e2e     # PowerShell: $env:E2E_FIXTURE_TOKEN='…'
 ```
 
-`@playwright/test`, `playwright` y `playwright-core` están fijados en 1.64.1; se
-revisaron sus metadatos y no se ejecutan scripts de instalación. Se utiliza Chrome
-del equipo en un contexto de prueba aislado, sin abrir perfiles personales ni
-instalar un navegador automáticamente. Si tu ejecutable está en otra ubicación,
-configura `E2E_BROWSER_EXECUTABLE` con su ruta local.
+`test:e2e` espera al API Gateway (`E2E_API_BASE_URL`, por defecto `http://localhost:8080/api/v1`; solo se
+admite loopback HTTP con ruta `/api/v1`), registra por la API pública tres cuentas desechables (cliente, otro
+cliente y asesor), promueve al asesor con `POST http://127.0.0.1:8081/api/v1/internal/e2e/accounts/{id}/realtor`
+(`X-Fixture-Token` + `X-Internal-Token`, variables `E2E_FIXTURE_TOKEN` / `E2E_INTERNAL_TOKEN`), escribe un
+manifiesto privado 0600 verificado por PID e inicia Vite en un puerto aleatorio con `VITE_API_BASE_URL` apuntando al
+gateway (CORS central del gateway). No intercepta ni simula respuestas desde Playwright.
 
-`test:e2e` compila las clases de prueba del backend y su classpath Maven, inicia
-`BrowserFixtureServer` en loopback con H2, claves y credenciales aleatorias, y lee
-su manifiesto privado 0600. Verifica el PID y rechaza URLs de API remotas. Luego
-inicia Vite en un puerto aleatorio con `VITE_API_BASE_URL` del fixture. No utiliza
-el backend de `.env*.local` ni intercepta/responde solicitudes API desde Playwright.
-El runner de Playwright se invoca mediante el launcher; ejecutarlo directamente
-sin sus variables de entorno falla para evitar usar otro servidor accidentalmente.
+La configuración usa un trabajador, cero reintentos y datos únicos por escenario. Los 15 recorridos cubren
+Sprint 2 (registro/perfil, catálogo, avisos por polling, simulación y aislamiento, revocación de sesión y TOTP
+real), Sprint 3 (pasarelas, SUNARP, XLSX, asesor hipotecario, mensajería y bloqueos) y Sprint 4 (TNA→TEA,
+historial, comparador con prepago, versiones inmutables, verificación SHA-256, PDF por versión y exportaciones,
+emisión de versión por el asesor). Los avisos de oferta llegan de forma asíncrona (outbox → RabbitMQ → inbox), por
+lo que las pruebas los esperan con sondeo. El TOTP espera los intervalos reales de 30 segundos.
 
-La configuración usa un trabajador, cero reintentos y datos únicos por escenario.
-Los seis recorridos verifican registro/perfil persistente (US01/US02), catálogo,
-filtros y cancelación/eliminación (US07/US08/US14), entrega de oferta mediante el
-polling real y lectura idempotente del aviso (US10), cronograma persistente desde
-la oferta y simulación directa (US11), aislamiento entre dos usuarios, revocación
-de una sesión sin cerrar la otra (US04), y activación/ingreso/desactivación TOTP
-real (US03). Este último espera los siguientes intervalos reales de 30 segundos;
-no altera el reloj ni simula códigos/respuestas del backend.
-
-Los procesos dedicados se detienen y el manifiesto se elimina tanto al terminar
-como ante error, timeout, SIGINT o SIGTERM. Las pruebas unitarias del launcher
-cubren éxito, error, señal ya recibida, cierre prematuro, timeout y validación del
-manifiesto. Un fallo conserva un log privado del fixture para diagnóstico en
-`test-results/backend-fixture.log`; no imprime credenciales. Los resultados y
-reportes se ignoran en Git. Capturas, trazas y vídeos están desactivados para no
-persistir visualmente las claves TOTP temporales; cualquier diagnóstico local de
-fallo sigue siendo privado y no debe publicarse como evidencia sin revisión.
-
-Para ejecutar un caso específico, se pasan argumentos al runner:
+Los procesos dedicados se detienen y el manifiesto se elimina al terminar, ante error, timeout, SIGINT o SIGTERM.
+Capturas, trazas y vídeos están desactivados para no persistir claves TOTP temporales. Para un caso concreto:
 
 ```sh
-pnpm test:e2e --grep "catálogo real"
+pnpm test:e2e --grep "sprint 4"
 ```
-
-El launcher no modifica el código del backend: genera únicamente sus artefactos
-Maven de prueba y bases H2 efímeras. No se incluyen fixture ni credenciales en la
-compilación de producción del frontend.
 
 ## Entornos y despliegue estático
 
@@ -275,7 +291,7 @@ archivo por un reverse proxy a la API que administras:
 
 ```nginx
 location ^~ /api/ {
-    proxy_pass http://credicasa-backend:8080;
+    proxy_pass http://api-gateway:8080;
     proxy_set_header Host $host;
     proxy_set_header X-Forwarded-Proto $scheme;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -284,15 +300,13 @@ location ^~ /api/ {
 }
 ```
 
-`proxy_pass` sin sufijo conserva `/api/v1` completo. `credicasa-backend:8080`
+`proxy_pass` sin sufijo conserva `/api/v1` completo. `api-gateway:8080`
 es el servicio de Compose del backend: este nombre solo resuelve si Nginx se
 conecta a la misma red, por lo que debes usar un upstream local alcanzable en tu
 instalación. En este caso puedes dejar `CORS_ALLOWED_ORIGINS` vacío; no se necesita
 un servicio externo de hosting. El backend tiene su propia configuración y
 requisitos de despliegue, descritos en su repositorio.
 
-Validación disponible: unidades, build con valores válidos e inválidos, rutas
-SPA y seis recorridos Chrome contra la API H2 real. Este entorno no dispone de
-Nginx ni Docker: el ejemplo se revisó estáticamente; no se afirma un arranque
-Nginx, una imagen Docker o un despliegue público ejecutado. La suite `test:e2e`
-sigue inyectando la API loopback de su fixture en Vite de desarrollo.
+Validación disponible: 56 pruebas unitarias, build de producción y 15 recorridos Chrome contra los
+microservicios reales detrás del API Gateway; la imagen Nginx se construye y queda `healthy` dentro del
+`docker-compose.yml` del backend.

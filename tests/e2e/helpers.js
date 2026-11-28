@@ -1,16 +1,60 @@
 import { randomUUID, createHmac } from 'node:crypto'
 import { readFileSync } from 'node:fs'
-import { expect } from '@playwright/test'
+import { test as base, expect } from '@playwright/test'
 
 export const fixture = JSON.parse(readFileSync(process.env.E2E_FIXTURE_MANIFEST, 'utf8'))
 export const unique = () => randomUUID().replaceAll('-', '')
 export const credentials = () => ({ firstName: 'Prueba', lastName: 'Integrada', email: `e2e-${unique()}@example.com`, password: `E2e-${unique()}!` })
+// Inmuebles temporales creados durante el test en curso (por API o por la UI) con el token de su propietario.
+// Al terminar cada test se eliminan con DELETE /properties/{id} (soft-delete real) para no ensuciar el catálogo.
+const temporaryProperties = new Map()
+const pendingCaptures = new Set()
+export function trackProperty(id, token) {
+  if (typeof id === 'string' && id && typeof token === 'string' && token) temporaryProperties.set(id, token)
+}
+export async function cleanupProperties(request) {
+  await Promise.allSettled([...pendingCaptures])
+  const pending = [...temporaryProperties]
+  temporaryProperties.clear()
+  const leftovers = []
+  for (const [id, token] of pending) {
+    const response = await request.delete(`${fixture.apiBaseUrl}/properties/${id}`, { headers: { Authorization: `Bearer ${token}` } })
+    // 204: eliminado ahora; 404: el propio test ya lo había eliminado.
+    if (![204, 404].includes(response.status())) leftovers.push(`${id} (HTTP ${response.status()})`)
+  }
+  return leftovers
+}
+// Registra los POST /properties que hace la SPA (alta desde /realState) con el token Bearer de esa petición.
+function captureUiProperty(response) {
+  const request = response.request()
+  if (request.method() !== 'POST' || response.status() !== 201 || !/\/api\/v1\/properties$/.test(new URL(response.url()).pathname)) return
+  const capture = (async () => {
+    const token = (await request.headerValue('authorization'))?.replace(/^Bearer\s+/i, '')
+    const created = await response.json()
+    trackProperty(created?.id, token)
+  })().catch(() => { /* Sin cuerpo legible: el test lo elimina por su cuenta o queda en el informe. */ })
+  pendingCaptures.add(capture)
+  capture.finally(() => pendingCaptures.delete(capture))
+}
+export const test = base.extend({
+  context: async ({ context }, use) => {
+    context.on('response', captureUiProperty)
+    await use(context)
+  },
+  temporaryPropertyCleanup: [async ({ request }, use) => {
+    await use()
+    const leftovers = await cleanupProperties(request)
+    expect(leftovers, 'Inmuebles temporales que no se pudieron eliminar al terminar el test').toEqual([])
+  }, { auto: true }],
+})
 export async function api(request, method, path, { token, body, status = 200 } = {}) {
   const response = await request[method](`${fixture.apiBaseUrl}${path}`, { headers: token ? { Authorization: `Bearer ${token}` } : {}, ...(body !== undefined ? { data: body } : {}) })
   expect(response.status(), `API ${method.toUpperCase()} ${path}`).toBe(status)
   if (status === 204) return null
   const text = await response.text()
-  return text ? JSON.parse(text) : null
+  const parsed = text ? JSON.parse(text) : null
+  if (method === 'post' && path === '/properties' && status === 201) trackProperty(parsed?.id, token)
+  return parsed
 }
 export async function registerAccount(request) {
   const account = credentials()

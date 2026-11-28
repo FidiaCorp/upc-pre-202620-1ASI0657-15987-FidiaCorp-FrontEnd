@@ -18,8 +18,21 @@ export function validDate(value) {
   const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)
   return year >= 1 && month >= 1 && month <= 12 && day >= 1 && day <= [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1]
 }
+/** US19: tipo de tasa ingresada. La TNA exige su capitalización (m) y el servidor la convierte a TEA = (1 + TNA/m)^m − 1. */
+export const rateTypes = [['TEA', 'TEA — Tasa efectiva anual'], ['TNA', 'TNA — Tasa nominal anual']]
+export const compoundingOptions = [['360', 'Diaria (360)'], ['365', 'Diaria (365)'], ['12', 'Mensual (12)'], ['4', 'Trimestral (4)'], ['2', 'Semestral (2)'], ['1', 'Anual (1)']]
+export function ratePayload(form) {
+  const rateType = form.rateType === 'TNA' ? 'TNA' : 'TEA'
+  return rateType === 'TNA' ? { rateType, compoundingPeriodsPerYear: Number(form.compoundingPeriodsPerYear) } : { rateType }
+}
+export function describeRateTerms(rate) {
+  if (!rate || !['TEA', 'TNA'].includes(rate.rateType) || typeof rate.effectiveAnnualRate !== 'string' || !plain.test(rate.effectiveAnnualRate)) return null
+  return rate.rateType === 'TNA'
+    ? { type: 'TNA', input: rate.inputRate, periods: rate.compoundingPeriodsPerYear, effective: rate.effectiveAnnualRate }
+    : { type: 'TEA', input: rate.inputRate, periods: null, effective: rate.effectiveAnnualRate }
+}
 export function simulationDefaults() {
-  return { loanAmount: '', propertyValue: '', currency: 'PEN', termMonths: '240', teaPercent: '', startDate: new Date().toISOString().slice(0, 10), propertyAddress: '', gracePeriodType: 'NONE', gracePeriodMonths: '0', balloon: false, balloonPaymentAmount: '', lifeInsurancePercent: '0', propertyInsurancePercent: '0', monthlyAdminFee: '0', discountPercent: '' }
+  return { loanAmount: '', propertyValue: '', currency: 'PEN', termMonths: '240', rateType: 'TEA', compoundingPeriodsPerYear: '360', teaPercent: '', startDate: new Date().toISOString().slice(0, 10), propertyAddress: '', gracePeriodType: 'NONE', gracePeriodMonths: '0', balloon: false, balloonPaymentAmount: '', lifeInsurancePercent: '0', propertyInsurancePercent: '0', monthlyAdminFee: '0', discountPercent: '' }
 }
 export function validateSimulation(form) {
   const errors = {}
@@ -29,7 +42,13 @@ export function validateSimulation(form) {
   if (!['PEN', 'USD'].includes(form.currency)) errors.currency = 'Selecciona soles o dólares.'
   const months = Number(form.termMonths)
   if (!/^\d+$/.test(form.termMonths) || months < 1 || months > 360) errors.termMonths = 'El plazo debe ser un entero entre 1 y 360 meses.'
-  if (!validPercent(form.teaPercent)) errors.teaPercent = 'Ingresa una TEA mayor que 0 y hasta 100 %, con hasta 6 decimales.'
+  const rateType = form.rateType || 'TEA'
+  if (!rateTypes.some(([value]) => value === rateType)) errors.rateType = 'Selecciona TEA o TNA.'
+  if (!validPercent(form.teaPercent)) errors.teaPercent = `Ingresa una ${rateType === 'TNA' ? 'TNA' : 'TEA'} mayor que 0 y hasta 100 %, con hasta 6 decimales.`
+  if (rateType === 'TNA') {
+    const periods = String(form.compoundingPeriodsPerYear ?? '').trim()
+    if (!/^\d{1,3}$/.test(periods) || Number(periods) < 1 || Number(periods) > 365) errors.compoundingPeriodsPerYear = 'La capitalización debe ser un entero de 1 a 365 periodos por año.'
+  }
   if (!validDate(form.startDate) || form.startDate < '1900-01-01' || form.startDate > '9990-12-31') errors.startDate = 'Ingresa una fecha válida entre 1900 y 9990.'
   else if (!errors.termMonths && Number(form.startDate.slice(0, 4)) + Math.floor((Number(form.startDate.slice(5, 7)) - 1 + months) / 12) > 9999) errors.startDate = 'La última cuota no puede superar el año 9999.'
   if (form.propertyAddress.trim().length > 250) errors.propertyAddress = 'La dirección admite hasta 250 caracteres.'
@@ -44,7 +63,7 @@ export function validateSimulation(form) {
 }
 export function simulationPayload(form) {
   return {
-    loanAmount: form.loanAmount.trim(), ...(form.propertyValue.trim() ? { propertyValue: form.propertyValue.trim() } : {}), currency: form.currency, termMonths: Number(form.termMonths), annualInterestRate: percentToDecimal(form.teaPercent), startDate: form.startDate,
+    loanAmount: form.loanAmount.trim(), ...(form.propertyValue.trim() ? { propertyValue: form.propertyValue.trim() } : {}), currency: form.currency, termMonths: Number(form.termMonths), annualInterestRate: percentToDecimal(form.teaPercent), ...ratePayload(form), startDate: form.startDate,
     propertyAddress: form.propertyAddress.trim(), gracePeriodType: form.gracePeriodType, gracePeriodMonths: form.gracePeriodType === 'NONE' ? 0 : Number(form.gracePeriodMonths),
     balloonPaymentAmount: form.balloon ? form.balloonPaymentAmount.trim() : '0', ...(form.balloon ? { balloonPaymentMonth: Number(form.termMonths) } : {}),
     lifeInsuranceRate: percentToDecimal(form.lifeInsurancePercent), propertyInsuranceRate: percentToDecimal(form.propertyInsurancePercent), monthlyAdminFee: form.monthlyAdminFee.trim(), ...(form.discountPercent.trim() ? { discountRateAnnual: percentToDecimal(form.discountPercent) } : {}),

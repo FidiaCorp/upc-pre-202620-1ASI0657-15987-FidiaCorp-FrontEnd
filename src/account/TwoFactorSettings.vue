@@ -84,10 +84,10 @@ onMounted(refresh)
 
 <template>
   <section class="two-factor-settings" aria-labelledby="two-factor-title">
-    <h2 id="two-factor-title">Verificación en dos pasos</h2>
+    <h2 id="two-factor-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg> Verificación en dos pasos</h2>
     <p v-if="!status && busy" role="status">Consultando el segundo factor…</p>
     <template v-if="status">
-      <p role="status">Estado: {{ status.enabled ? 'Activado' : 'Desactivado' }}.</p>
+      <p role="status" class="two-factor-status" :data-enabled="status.enabled">Estado: {{ status.enabled ? 'Activado' : 'Desactivado' }}.</p>
       <p v-if="!status.enabled && status.pending && !setup" class="field-help">Existe una configuración pendiente. Genera otra clave para reemplazarla y continuar.</p>
       <form v-if="!setup" class="account-form" novalidate :aria-busy="busy" @submit.prevent="status.enabled ? disable() : beginSetup()">
         <p>{{ status.enabled ? 'Para desactivar, usa tu contraseña y un código que no hayas utilizado antes. Si acabas de ingresar, espera al siguiente código.' : 'Genera una clave e incorpórala manualmente en una aplicación autenticadora compatible con TOTP.' }}</p>
@@ -104,9 +104,14 @@ onMounted(refresh)
         </fieldset>
       </form>
       <div v-if="setup" class="setup-details">
+        <ol class="steps" aria-label="Pasos de activación">
+          <li class="done">Clave de configuración generada</li>
+          <li>Añádela en tu aplicación autenticadora</li>
+          <li>Ingresa el código de 6 dígitos para confirmar</li>
+        </ol>
         <p>En tu aplicación autenticadora, añade una cuenta con esta clave (TOTP, 6 dígitos, intervalo de 30 segundos). Después ingresa el código para activar.</p>
         <p class="field-help">La clave se oculta al salir o terminar. La configuración vence en {{ remaining }} segundos.</p>
-        <p><strong>Clave manual:</strong> <code class="setup-secret">{{ setup.secret }}</code></p>
+        <p class="secret-row"><strong>Clave manual:</strong> <code class="setup-secret">{{ setup.secret }}</code></p>
         <details>
           <summary>Ver URI de configuración</summary>
           <code class="setup-uri">{{ setup.otpauthUri }}</code>
@@ -129,3 +134,12 @@ onMounted(refresh)
     <button v-if="!setup" type="button" class="text-button" :disabled="busy || retrySeconds > 0" @click="refresh">Actualizar estado</button>
   </section>
 </template>
+
+<style scoped>
+.two-factor-settings h2 { display: flex; align-items: center; gap: 8px; margin-top: 0; }
+.two-factor-status { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; padding: 4px 12px; border-radius: 999px; background: #f1f5f9; color: var(--cc-text-2); border: 1px solid var(--cc-border); }
+.two-factor-status[data-enabled="true"] { background: var(--cc-success-bg); color: var(--cc-success); border-color: var(--cc-success-border); }
+.secret-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.setup-details { margin-top: 12px; }
+.setup-uri { display: block; font-size: 12px; overflow-wrap: anywhere; margin-top: 6px; color: var(--cc-text-3); }
+</style>

@@ -4,7 +4,7 @@ import { mkdtemp, writeFile, rm, chmod } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { once } from 'node:events'
-import { readFixtureManifest, spawnManaged, stopManaged, waitManaged, waitUntil } from '../scripts/e2e-lifecycle.mjs'
+import { isLoopbackApiBase, readFixtureManifest, spawnManaged, validateGatewayApiBase, stopManaged, waitManaged, waitUntil } from '../scripts/e2e-lifecycle.mjs'
 
 const child = script => spawnManaged(process.execPath, ['-e', script], { stdio: 'ignore' })
 test('managed process resolves success and reports an already terminated failure immediately', async () => {
@@ -54,5 +54,13 @@ test('fixture manifest accepts only the supervised loopback process and private 
     }
     await writeFile(path, JSON.stringify({ ...manifest, apiBaseUrl: 'https://example.com/api/v1' }))
     await assert.rejects(readFixtureManifest(path, process.pid), /fixture local/)
+    await writeFile(path, JSON.stringify({ ...manifest, apiBaseUrl: 'http://localhost:8080/api/v1' }))
+    assert.equal((await readFixtureManifest(path, process.pid)).apiBaseUrl, 'http://localhost:8080/api/v1')
   } finally { await rm(directory, { recursive: true, force: true }) }
+})
+test('Etapa 2: la API E2E solo puede ser el API Gateway local en loopback con /api/v1 exacto', () => {
+  for (const ok of ['http://localhost:8080/api/v1', 'http://127.0.0.1:8080/api/v1', 'http://[::1]:8080/api/v1']) assert.equal(isLoopbackApiBase(ok), true, ok)
+  for (const bad of ['https://localhost:8080/api/v1', 'http://example.com:8080/api/v1', 'http://localhost/api/v1', 'http://localhost:8080/api', 'http://localhost:8080/api/v1?x=1', 'http://user:pw@localhost:8080/api/v1', 'http://10.0.0.5:8080/api/v1', 'not a url']) assert.equal(isLoopbackApiBase(bad), false, bad)
+  assert.equal(validateGatewayApiBase('http://localhost:8080/api/v1'), 'http://localhost:8080/api/v1')
+  assert.throws(() => validateGatewayApiBase('https://api.example.com/api/v1'), /loopback/)
 })

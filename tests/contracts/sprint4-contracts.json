@@ -1,0 +1,717 @@
+{
+  "simulationTna": {
+    "status": 201,
+    "response": {
+      "quotationId": "bb4ce6ed-7fe6-49f6-ab50-c556b7612441",
+      "currency": "PEN",
+      "loanAmount": "100000.00",
+      "propertyValue": "100000.00",
+      "termMonths": 12,
+      "estimatedMonthlyInstallment": "8887.60",
+      "metrics": {
+        "tea": "0.12747431",
+        "tem": "0.010048484275725623155152",
+        "monthlyTir": "0.010048482949639933507715",
+        "tcea": "0.127474292236961170686265",
+        "van": "0.00",
+        "totalInterest": "6651.21",
+        "totalPrincipal": "100000.00",
+        "totalLifeInsurance": "0.00",
+        "totalPropertyInsurance": "0.00",
+        "totalAdminFee": "0.00",
+        "totalCost": "106651.21",
+        "discountRateUsed": "0.12747431"
+      },
+      "status": "ISSUED",
+      "schedule": [
+        {
+          "installmentNumber": 1,
+          "dueDate": "2026-02-28",
+          "initialBalance": "100000.00",
+          "interest": "1004.85",
+          "principalAmortization": "7882.75",
+          "installmentAmount": "8887.60",
+          "lifeInsurance": "0.00",
+          "propertyInsurance": "0.00",
+          "adminFee": "0.00",
+          "totalPayment": "8887.60",
+          "finalBalance": "92117.25",
+          "graceType": "NONE"
+        },
+        {
+          "installmentNumber": 2,
+          "dueDate": "2026-03-31",
+          "initialBalance": "92117.25",
+          "interest": "925.64",
+          "principalAmortization": "7961.96",
+          "installmentAmount": "8887.60",
+          "lifeInsurance": "0.00",
+          "propertyInsurance": "0.00",
+          "adminFee": "0.00",
+          "totalPayment": "8887.60",
+          "finalBalance": "84155.29",
+          "graceType": "NONE"
+        },
+        {
+          "installmentNumber": 3,
+          "dueDate": "2026-04-30",
+          "initialBalance": "84155.29",
+          "interest": "845.63",
+          "principalAmortization": "8041.97",
+          "installmentAmount": "8887.60",
+          "lifeInsurance": "0.00",
+          "propertyInsurance": "0.00",
+          "adminFee": "0.00",
+          "totalPayment": "8887.60",
+          "finalBalance": "76113.32",
+          "graceType": "NONE"
+        },
+        {
+          "installmentNumber": 4,
+          "dueDate": "2026-05-31",
+          "initialBalance": "76113.32",
+          "interest": "764.82",
+          "principalAmortization": "8122.78",
+          "installmentAmount": "8887.60",
+          "lifeInsurance": "0.00",
+          "propertyInsurance": "0.00",
+          "adminFee": "0.00",
+          "totalPayment": "8887.60",
+          "finalBalance": "67990.54",
+          "graceType": "NONE"
+        },
+        {
+          "installmentNumber": 5,
+          "dueDate": "2026-06-30",
+          "initialBalance": "67990.54",
+          "interest": "683.20",
+          "principalAmortization": "8204.40",
+          "installmentAmount": "8887.60",
+          "lifeInsurance": "0.00",
+          "propertyInsurance": "0.00",
+          "adminFee": "0.00",
+          "totalPayment": "8887.60",
+          "finalBalance": "59786.14",
+          "graceType": "NONE"
+        },
+        {
+          "installmentNumber": 6,
+          "dueDate": "2026-07-31",
+          "initialBalance": "59786.14",
+          "interest": "600.76",
+          "principalAmortization": "8286.84",
+          "installmentAmount": "8887.60",
+          "lifeInsurance": "0.00",
+          "propertyInsurance": "0.00",
+          "adminFee": "0.00",
+          "totalPayment": "8887.60",
+          "finalBalance": "51499.30",
+          "graceType": "NONE"
+        },
+        {
+          "installmentNumber": 7,
+          "dueDate": "2026-08-31",
+          "initialBalance": "51499.30",
+          "interest": "517.49",
+          "principalAmortization": "8370.11",
+          "installmentAmount": "8887.60",
+          "lifeInsurance": "0.00",
+          "propertyInsurance": "0.00",
+          "adminFee": "0.00",
+          "totalPayment": "8887.60",
+          "finalBalance": "43129.19",
+          "graceType": "NONE"
+        },
+        {
+          "installmentNumber": 8,
+          "dueDate": "2026-09-30",
+          "initialBalance": "43129.19",
+          "interest": "433.38",
+          "principalAmortization": "8454.22",
+          "installmentAmount": "8887.60",
+          "lifeInsurance": "0.00",
+          "propertyInsurance": "0.00",
+          "adminFee": "0.00",
+          "totalPayment": "8887.60",
+          "finalBalance": "34674.97",
+          "graceType": "NONE"
+        },
+        {
+          "installmentNumber": 9,
+          "dueDate": "2026-10-31",
+          "initialBalance": "34674.97",
+          "interest": "348.43",
+          "principalAmortization": "8539.17",
+          "installmentAmount": "8887.60",
+          "lifeInsurance": "0.00",
+          "propertyInsurance": "0.00",
+          "adminFee": "0.00",
+          "totalPayment": "8887.60",
+          "finalBalance": "26135.80",
+          "graceType": "NONE"
+        },
+        {
+          "installmentNumber": 10,
+          "dueDate": "2026-11-30",
+          "initialBalance": "26135.80",
+          "interest": "262.63",
+          "principalAmortization": "8624.97",
+          "installmentAmount": "8887.60",
+          "lifeInsurance": "0.00",
+          "propertyInsurance": "0.00",
+          "adminFee": "0.00",
+          "totalPayment": "8887.60",
+          "finalBalance": "17510.83",
+          "graceType": "NONE"
+        },
+        {
+          "installmentNumber": 11,
+          "dueDate": "2026-12-31",
+          "initialBalance": "17510.83",
+          "interest": "175.96",
+          "principalAmortization": "8711.64",
+          "installmentAmount": "8887.60",
+          "lifeInsurance": "0.00",
+          "propertyInsurance": "0.00",
+          "adminFee": "0.00",
+          "totalPayment": "8887.60",
+          "finalBalance": "8799.19",
+          "graceType": "NONE"
+        },
+        {
+          "installmentNumber": 12,
+          "dueDate": "2027-01-31",
+          "initialBalance": "8799.19",
+          "interest": "88.42",
+          "principalAmortization": "8799.19",
+          "installmentAmount": "8887.61",
+          "lifeInsurance": "0.00",
+          "propertyInsurance": "0.00",
+          "adminFee": "0.00",
+          "totalPayment": "8887.61",
+          "finalBalance": "0.00",
+          "graceType": "NONE"
+        }
+      ],
+      "createdAt": "2026-11-25T04:40:25.356583",
+      "rate": {
+        "rateType": "TNA",
+        "inputRate": "0.12",
+        "compoundingPeriodsPerYear": 360,
+        "effectiveAnnualRate": "0.12747431"
+      }
+    }
+  },
+  "simulationTnaMissingPeriods": {
+    "status": 400,
+    "response": {
+      "type": "https://api.credicasa.pe/problems/bad-request",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "compoundingPeriodsPerYear es obligatorio cuando rateType=TNA.",
+      "instance": "/api/v1/simulations/calculate",
+      "correlationId": "96586e6f-6786-4fb6-b92f-85180b122bd6",
+      "error": "Bad Request",
+      "message": "compoundingPeriodsPerYear es obligatorio cuando rateType=TNA.",
+      "timestamp": "2026-11-25T04:40:25.384248575"
+    }
+  },
+  "simulationPage": {
+    "status": 200,
+    "response": {
+      "items": [
+        {
+          "quotationId": "1e840d32-b1d8-4454-a173-4700b95df664",
+          "createdAt": "2026-11-25T04:40:25.399794",
+          "currency": "USD",
+          "loanAmount": "100000.00",
+          "termMonths": 24,
+          "rateType": "TEA",
+          "inputRate": "0.095",
+          "tea": "0.09500000",
+          "tcea": "0.094999960442487166608779",
+          "totalInterest": "9764.36",
+          "totalCost": "109764.36",
+          "propertyAddress": "Inmueble de referencia"
+        },
+        {
+          "quotationId": "bb4ce6ed-7fe6-49f6-ab50-c556b7612441",
+          "createdAt": "2026-11-25T04:40:25.356583",
+          "currency": "PEN",
+          "loanAmount": "100000.00",
+          "termMonths": 12,
+          "rateType": "TNA",
+          "inputRate": "0.12",
+          "tea": "0.12747431",
+          "tcea": "0.127474292236961170686265",
+          "totalInterest": "6651.21",
+          "totalCost": "106651.21",
+          "propertyAddress": "Inmueble de referencia"
+        }
+      ],
+      "page": 0,
+      "size": 5,
+      "totalElements": 2,
+      "totalPages": 1
+    }
+  },
+  "comparison": {
+    "status": 200,
+    "response": {
+      "scenarios": [
+        {
+          "label": "Banco A",
+          "rate": {
+            "rateType": "TEA",
+            "inputRate": "0.095",
+            "compoundingPeriodsPerYear": null,
+            "effectiveAnnualRate": "0.095"
+          },
+          "loanAmount": "200000.00",
+          "termMonths": 24,
+          "effectiveTermMonths": 24,
+          "monthlyInstallment": "9147.03",
+          "tea": "0.09500000",
+          "tem": "0.007591534290582645281738",
+          "tcea": "0.094999995803415194826842",
+          "monthlyTir": "0.007591533968783305095095",
+          "van": "0.00",
+          "totalInterest": "19528.75",
+          "totalCost": "219528.75",
+          "extraordinaryPayment": null,
+          "interestSavings": "0.00",
+          "finalBalance": "0.00",
+          "schedule": [
+            {
+              "installmentNumber": 1,
+              "dueDate": "2026-02-28",
+              "initialBalance": "200000.00",
+              "interest": "1518.31",
+              "principalAmortization": "7628.72",
+              "installmentAmount": "9147.03",
+              "lifeInsurance": "0.00",
+              "propertyInsurance": "0.00",
+              "adminFee": "0.00",
+              "totalPayment": "9147.03",
+              "finalBalance": "192371.28",
+              "graceType": "NONE"
+            },
+            {
+              "installmentNumber": 2,
+              "dueDate": "2026-03-31",
+              "initialBalance": "192371.28",
+              "interest": "1460.39",
+              "principalAmortization": "7686.64",
+              "installmentAmount": "9147.03",
+              "lifeInsurance": "0.00",
+              "propertyInsurance": "0.00",
+              "adminFee": "0.00",
+              "totalPayment": "9147.03",
+              "finalBalance": "184684.64",
+              "graceType": "NONE"
+            },
+            {
+              "installmentNumber": 24,
+              "dueDate": "2028-01-31",
+              "initialBalance": "9078.14",
+              "interest": "68.92",
+              "principalAmortization": "9078.14",
+              "installmentAmount": "9147.06",
+              "lifeInsurance": "0.00",
+              "propertyInsurance": "0.00",
+              "adminFee": "0.00",
+              "totalPayment": "9147.06",
+              "finalBalance": "0.00",
+              "graceType": "NONE"
+            }
+          ]
+        },
+        {
+          "label": "Banco B (TNA)",
+          "rate": {
+            "rateType": "TNA",
+            "inputRate": "0.09",
+            "compoundingPeriodsPerYear": 12,
+            "effectiveAnnualRate": "0.09380690"
+          },
+          "loanAmount": "200000.00",
+          "termMonths": 24,
+          "effectiveTermMonths": 24,
+          "monthlyInstallment": "9136.95",
+          "tea": "0.09380690",
+          "tem": "0.007500000178770476364753",
+          "tcea": "0.093807035185903489099830",
+          "monthlyTir": "0.007500010555357519456323",
+          "van": "-0.03",
+          "totalInterest": "19286.79",
+          "totalCost": "219286.79",
+          "extraordinaryPayment": null,
+          "interestSavings": "0.00",
+          "finalBalance": "0.00",
+          "schedule": [
+            {
+              "installmentNumber": 1,
+              "dueDate": "2026-02-28",
+              "initialBalance": "200000.00",
+              "interest": "1500.00",
+              "principalAmortization": "7636.95",
+              "installmentAmount": "9136.95",
+              "lifeInsurance": "0.00",
+              "propertyInsurance": "0.00",
+              "adminFee": "0.00",
+              "totalPayment": "9136.95",
+              "finalBalance": "192363.05",
+              "graceType": "NONE"
+            },
+            {
+              "installmentNumber": 2,
+              "dueDate": "2026-03-31",
+              "initialBalance": "192363.05",
+              "interest": "1442.72",
+              "principalAmortization": "7694.23",
+              "installmentAmount": "9136.95",
+              "lifeInsurance": "0.00",
+              "propertyInsurance": "0.00",
+              "adminFee": "0.00",
+              "totalPayment": "9136.95",
+              "finalBalance": "184668.82",
+              "graceType": "NONE"
+            },
+            {
+              "installmentNumber": 24,
+              "dueDate": "2028-01-31",
+              "initialBalance": "9068.92",
+              "interest": "68.02",
+              "principalAmortization": "9068.92",
+              "installmentAmount": "9136.94",
+              "lifeInsurance": "0.00",
+              "propertyInsurance": "0.00",
+              "adminFee": "0.00",
+              "totalPayment": "9136.94",
+              "finalBalance": "0.00",
+              "graceType": "NONE"
+            }
+          ]
+        },
+        {
+          "label": "Banco A + prepago",
+          "rate": {
+            "rateType": "TEA",
+            "inputRate": "0.095",
+            "compoundingPeriodsPerYear": null,
+            "effectiveAnnualRate": "0.095"
+          },
+          "loanAmount": "200000.00",
+          "termMonths": 24,
+          "effectiveTermMonths": 22,
+          "monthlyInstallment": "9147.03",
+          "tea": "0.09500000",
+          "tem": "0.007591534290582645281738",
+          "tcea": "0.094999969597629209060505",
+          "monthlyTir": "0.007591531959291030278977",
+          "van": "0.00",
+          "totalInterest": "16999.76",
+          "totalCost": "216999.76",
+          "extraordinaryPayment": {
+            "afterInstallment": 6,
+            "amount": "20000.00",
+            "strategy": "REDUCE_TERM"
+          },
+          "interestSavings": "2528.99",
+          "finalBalance": "0.00",
+          "schedule": [
+            {
+              "installmentNumber": 1,
+              "dueDate": "2026-02-28",
+              "initialBalance": "200000.00",
+              "interest": "1518.31",
+              "principalAmortization": "7628.72",
+              "installmentAmount": "9147.03",
+              "lifeInsurance": "0.00",
+              "propertyInsurance": "0.00",
+              "adminFee": "0.00",
+              "totalPayment": "9147.03",
+              "finalBalance": "192371.28",
+              "graceType": "NONE"
+            },
+            {
+              "installmentNumber": 2,
+              "dueDate": "2026-03-31",
+              "initialBalance": "192371.28",
+              "interest": "1460.39",
+              "principalAmortization": "7686.64",
+              "installmentAmount": "9147.03",
+              "lifeInsurance": "0.00",
+              "propertyInsurance": "0.00",
+              "adminFee": "0.00",
+              "totalPayment": "9147.03",
+              "finalBalance": "184684.64",
+              "graceType": "NONE"
+            },
+            {
+              "installmentNumber": 22,
+              "dueDate": "2027-11-30",
+              "initialBalance": "8815.41",
+              "interest": "66.92",
+              "principalAmortization": "8815.41",
+              "installmentAmount": "8882.33",
+              "lifeInsurance": "0.00",
+              "propertyInsurance": "0.00",
+              "adminFee": "0.00",
+              "totalPayment": "8882.33",
+              "finalBalance": "0.00",
+              "graceType": "NONE"
+            }
+          ]
+        }
+      ],
+      "bestByTcea": "Banco B (TNA)",
+      "bestByTotalInterest": "Banco A + prepago",
+      "bestByMonthlyInstallment": "Banco B (TNA)",
+      "bestByVan": "Banco A",
+      "bestByTotalCost": "Banco A + prepago"
+    }
+  },
+  "comparisonTooFew": {
+    "status": 400,
+    "response": {
+      "type": "https://api.credicasa.pe/problems/bad-request",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Error en la validación de los datos enviados.",
+      "instance": "/api/v1/simulations/compare",
+      "correlationId": "9c465c3f-b94a-4ca8-8381-52a8b76899db",
+      "error": "Bad Request",
+      "message": "Error en la validación de los datos enviados.",
+      "timestamp": "2026-11-25T04:40:25.462915546",
+      "validationErrors": {
+        "scenarios": "Compare entre 2 y 3 escenarios"
+      }
+    }
+  },
+  "versionCreated": {
+    "status": 201,
+    "response": {
+      "id": "840c14b5-a15c-42ee-abaf-622bea53001f",
+      "offerId": "0303b921-c3e6-4e5b-b8f8-f95f4d191b71",
+      "versionNumber": 2,
+      "currency": "PEN",
+      "loanAmount": "200000.00",
+      "annualInterestRate": "0.07990000",
+      "termMonths": 12,
+      "monthlyInstallment": "17371.02",
+      "tcea": "0.079899878631829793823334",
+      "totalInterest": "8452.23",
+      "totalCost": "208452.23",
+      "snapshotHash": "e92528dda98101b7275a8182cb25aeb5157981677167fabef9d2ab83805a4b50",
+      "intact": true,
+      "expired": false,
+      "issuedBy": "8b929a3f-7d8a-4f3f-b828-0698b1f3d5b8",
+      "issuedAt": "2026-11-25T04:40:25.610Z",
+      "expiresAt": "2026-12-05T04:40:25.610Z",
+      "snapshot": {
+        "schemaVersion": 1,
+        "offerId": "0303b921-c3e6-4e5b-b8f8-f95f4d191b71",
+        "versionNumber": 2,
+        "issuedAt": "2026-11-25T04:40:25.610Z",
+        "expiresAt": "2026-12-05T04:40:25.610Z",
+        "bankCode": "BCP",
+        "bankName": "Banco de Crédito del Perú",
+        "title": "Oferta demostrativa de Banco de Crédito del Perú",
+        "issuerId": "8b929a3f-7d8a-4f3f-b828-0698b1f3d5b8",
+        "recipientId": "0f8d9e8d-06b3-4c7c-9c58-052b6e905a43",
+        "property": {
+          "id": "a9d9ce54-17da-4c8a-b2a6-ff7e85feef61",
+          "title": "Contrato Sprint 4",
+          "address": "Lima",
+          "price": "250000.00",
+          "currency": "PEN"
+        },
+        "terms": {
+          "loanAmount": "200000.00",
+          "currency": "PEN",
+          "annualInterestRate": "0.07990000",
+          "termMonths": 12,
+          "startDate": "2024-01-31"
+        },
+        "schedule": {
+          "quotationId": "c01be73d-547a-4502-bb5d-85911b7fe7e2",
+          "currency": "PEN",
+          "loanAmount": "200000.00",
+          "propertyValue": "250000.00",
+          "termMonths": 12,
+          "estimatedMonthlyInstallment": "17371.02",
+          "metrics": {
+            "tea": "0.07990000",
+            "tem": "0.006426264085744523172073",
+            "monthlyTir": "0.006426254659862465301237",
+            "tcea": "0.079899878631829793823334",
+            "van": "0.01",
+            "totalInterest": "8452.23",
+            "totalPrincipal": "200000.00",
+            "totalLifeInsurance": "0.00",
+            "totalPropertyInsurance": "0.00",
+            "totalAdminFee": "0.00",
+            "totalCost": "208452.23",
+            "discountRateUsed": "0.07990000"
+          },
+          "status": "ISSUED",
+          "schedule": [
+            {
+              "installmentNumber": 1,
+              "dueDate": "2024-02-29",
+              "initialBalance": "200000.00",
+              "interest": "1285.25",
+              "principalAmortization": "16085.77",
+              "installmentAmount": "17371.02",
+              "lifeInsurance": "0.00",
+              "propertyInsurance": "0.00",
+              "adminFee": "0.00",
+              "totalPayment": "17371.02",
+              "finalBalance": "183914.23",
+              "graceType": "NONE"
+            },
+            {
+              "installmentNumber": 12,
+              "dueDate": "2025-01-31",
+              "initialBalance": "17260.09",
+              "interest": "110.92",
+              "principalAmortization": "17260.09",
+              "installmentAmount": "17371.01",
+              "lifeInsurance": "0.00",
+              "propertyInsurance": "0.00",
+              "adminFee": "0.00",
+              "totalPayment": "17371.01",
+              "finalBalance": "0.00",
+              "graceType": "NONE"
+            }
+          ],
+          "createdAt": "2026-11-25T04:40:25.589947",
+          "rate": {
+            "rateType": "TEA",
+            "inputRate": "0.0799",
+            "compoundingPeriodsPerYear": null,
+            "effectiveAnnualRate": "0.07990000"
+          }
+        }
+      }
+    }
+  },
+  "versionForbiddenForClient": {
+    "status": 403,
+    "response": {
+      "type": "https://api.credicasa.pe/problems/forbidden",
+      "title": "Forbidden",
+      "status": 403,
+      "detail": "No cuenta con los privilegios suficientes para ejecutar esta operación.",
+      "instance": "/api/v1/offers/0303b921-c3e6-4e5b-b8f8-f95f4d191b71/versions",
+      "correlationId": "f7d90f56-987a-44b5-b839-26b646839cbb",
+      "error": "Forbidden",
+      "message": "No cuenta con los privilegios suficientes para ejecutar esta operación.",
+      "timestamp": "2026-11-25T04:40:25.625148217"
+    }
+  },
+  "versionList": {
+    "status": 200,
+    "response": [
+      {
+        "id": "840c14b5-a15c-42ee-abaf-622bea53001f",
+        "offerId": "0303b921-c3e6-4e5b-b8f8-f95f4d191b71",
+        "versionNumber": 2,
+        "currency": "PEN",
+        "loanAmount": "200000.00",
+        "annualInterestRate": "0.07990000",
+        "termMonths": 12,
+        "monthlyInstallment": "17371.02",
+        "tcea": "0.079899878631829793823334",
+        "totalInterest": "8452.23",
+        "totalCost": "208452.23",
+        "snapshotHash": "e92528dda98101b7275a8182cb25aeb5157981677167fabef9d2ab83805a4b50",
+        "intact": true,
+        "expired": false,
+        "issuedBy": "8b929a3f-7d8a-4f3f-b828-0698b1f3d5b8",
+        "issuedAt": "2026-11-25T04:40:25.610Z",
+        "expiresAt": "2026-12-05T04:40:25.610Z",
+        "snapshot": null
+      },
+      {
+        "id": "1b789c50-0834-42a0-baa1-857ed288a513",
+        "offerId": "0303b921-c3e6-4e5b-b8f8-f95f4d191b71",
+        "versionNumber": 1,
+        "currency": "PEN",
+        "loanAmount": "200000.00",
+        "annualInterestRate": "0.08500000",
+        "termMonths": 12,
+        "monthlyInstallment": "17414.87",
+        "tcea": "0.084999942176351840619927",
+        "totalInterest": "8978.45",
+        "totalCost": "208978.45",
+        "snapshotHash": "2bab1c70b328060287eece9abc45bfb7484d612861737eeff18c344ef5f779c8",
+        "intact": true,
+        "expired": false,
+        "issuedBy": "8b929a3f-7d8a-4f3f-b828-0698b1f3d5b8",
+        "issuedAt": "2026-11-25T04:40:25.549Z",
+        "expiresAt": "2026-12-10T04:40:25.549Z",
+        "snapshot": null
+      }
+    ]
+  },
+  "versionVerify": {
+    "status": 200,
+    "response": {
+      "id": "1b789c50-0834-42a0-baa1-857ed288a513",
+      "offerId": "0303b921-c3e6-4e5b-b8f8-f95f4d191b71",
+      "versionNumber": 1,
+      "currency": "PEN",
+      "loanAmount": "200000.00",
+      "annualInterestRate": "0.08500000",
+      "termMonths": 12,
+      "monthlyInstallment": "17414.87",
+      "tcea": "0.084999942176351840619927",
+      "totalInterest": "8978.45",
+      "totalCost": "208978.45",
+      "snapshotHash": "2bab1c70b328060287eece9abc45bfb7484d612861737eeff18c344ef5f779c8",
+      "intact": true,
+      "expired": false,
+      "issuedBy": "8b929a3f-7d8a-4f3f-b828-0698b1f3d5b8",
+      "issuedAt": "2026-11-25T04:40:25.549Z",
+      "expiresAt": "2026-12-10T04:40:25.549Z",
+      "snapshot": null
+    }
+  },
+  "pdfExportHeaders": {
+    "status": 200,
+    "response": {
+      "content-type": "application/pdf",
+      "content-disposition": "attachment; filename=\"=?UTF-8?Q?cotizacion=5Foferta=5F0303b921-c3e6-4e5b-b8f8-f95f4d191b71=5Fv1.pdf?=\"; filename*=UTF-8''cotizacion_oferta_0303b921-c3e6-4e5b-b8f8-f95f4d191b71_v1.pdf",
+      "x-snapshot-sha256": "2bab1c70b328060287eece9abc45bfb7484d612861737eeff18c344ef5f779c8",
+      "x-quotation-version": "1",
+      "x-content-sha256": "130038179855b682e0668fbbfd09db156e3b215d541990e1f00fe3ffeb3c453a"
+    }
+  },
+  "exportJobs": {
+    "status": 200,
+    "response": [
+      {
+        "id": "603ad347-d3a4-41ec-9eff-4b3197743141",
+        "offerId": "0303b921-c3e6-4e5b-b8f8-f95f4d191b71",
+        "versionId": "1b789c50-0834-42a0-baa1-857ed288a513",
+        "versionNumber": 1,
+        "format": "PDF",
+        "status": "COMPLETED",
+        "requestedBy": "0f8d9e8d-06b3-4c7c-9c58-052b6e905a43",
+        "fileName": "cotizacion_oferta_0303b921-c3e6-4e5b-b8f8-f95f4d191b71_v1.pdf",
+        "contentSha256": "130038179855b682e0668fbbfd09db156e3b215d541990e1f00fe3ffeb3c453a",
+        "sizeBytes": 3178,
+        "snapshotHash": "2bab1c70b328060287eece9abc45bfb7484d612861737eeff18c344ef5f779c8",
+        "requestedAt": "2026-11-25T04:40:25.661042Z",
+        "completedAt": "2026-11-25T04:40:25.664273Z"
+      }
+    ]
+  },
+  "_meta": {
+    "capturedAt": "2026-11-25T04:40:25.678Z",
+    "source": "docker compose (Etapa 2) vía API Gateway http://localhost:8080/api/v1",
+    "note": "Cronogramas recortados (primera(s) y última fila)."
+  }
+}

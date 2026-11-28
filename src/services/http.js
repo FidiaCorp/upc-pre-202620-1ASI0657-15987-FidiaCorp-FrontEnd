@@ -4,12 +4,14 @@ import { clearSession, isAuthenticated, session } from '../account/session.js'
 const baseUrl = resolveApiBase(import.meta.env?.VITE_API_BASE_URL, { production: import.meta.env?.PROD === true })
 
 export class ApiError extends Error {
-  constructor(message, status = 0, validationErrors = {}, code = null, retryAfter = 0) {
+  constructor(message, status = 0, validationErrors = {}, code = null, retryAfter = 0, body = null) {
     super(message)
     this.status = status
     this.validationErrors = validationErrors || {}
     this.code = code
     this.retryAfter = retryAfter
+    // Cuerpo JSON real de la respuesta (RFC 7807 ProblemDetail o DTO de negocio, p. ej. 402 de /payments/checkout).
+    this.body = body
   }
 }
 
@@ -25,7 +27,7 @@ export async function request(path, { method = 'GET', body, authenticated = true
       method,
       cache: 'no-store',
       headers: {
-        Accept: 'application/json',
+        Accept: 'application/json, application/problem+json',
         ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
@@ -42,7 +44,7 @@ export async function request(path, { method = 'GET', body, authenticated = true
       const credentialChallenge = ['/users/me/two-factor/setup', '/users/me/two-factor/confirm', '/users/me/two-factor/disable'].includes(path) && ['INVALID_CREDENTIALS', 'TWO_FACTOR_INVALID'].includes(data?.code)
       if (response.status === 401 && !credentialChallenge && token && session.token === token) clearSession()
       const fallback = response.status >= 500 ? 'El servidor no pudo completar la solicitud. Intenta nuevamente.' : 'No se pudo completar la solicitud.'
-      throw new ApiError(response.status >= 500 ? fallback : data?.message || fallback, response.status, data?.validationErrors, data?.code, Math.max(0, Number(response.headers.get('Retry-After')) || 0))
+      throw new ApiError(response.status >= 500 ? fallback : data?.message || data?.detail || fallback, response.status, data?.validationErrors, data?.code, Math.max(0, Number(response.headers.get('Retry-After')) || 0), data)
     }
     if (text && data === null) throw new ApiError('El servidor devolvió una respuesta inesperada.')
     return data
@@ -69,7 +71,11 @@ export async function downloadFile(path, filename, { authenticated = true } = {}
       signal: controller.signal,
     })
     if (!response.ok) {
-      throw new ApiError(`Error al descargar archivo: ${response.statusText}`, response.status)
+      // RFC 7807: p. ej. 409 si el snapshot de la versión no supera la verificación SHA-256 (US22).
+      let problem = null
+      try { problem = JSON.parse(await response.text()) } catch { problem = null }
+      const detail = response.status < 500 ? problem?.message || problem?.detail : null
+      throw new ApiError(detail || `Error al descargar archivo: ${response.statusText || response.status}`, response.status, problem?.validationErrors, problem?.code)
     }
     const blob = await response.blob()
     if (typeof window !== 'undefined' && typeof document !== 'undefined') {

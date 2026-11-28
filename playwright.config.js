@@ -1,6 +1,6 @@
 import { defineConfig } from '@playwright/test'
 
-if (!process.env.E2E_FIXTURE_MANIFEST || !process.env.E2E_BASE_URL) throw new Error('Usa pnpm test:e2e para iniciar el fixture local; no se admiten APIs externas.')
+if (!process.env.E2E_FIXTURE_MANIFEST || !process.env.E2E_BASE_URL) throw new Error('Usa pnpm test:e2e con el stack docker compose (API Gateway :8080) levantado; no se admiten APIs externas.')
 const baseURL = new URL(process.env.E2E_BASE_URL)
 if (baseURL.protocol !== 'http:' || baseURL.hostname !== '127.0.0.1' || !baseURL.port) throw new Error('La interfaz de pruebas debe ejecutarse en loopback con puerto aleatorio.')
 
@@ -10,7 +10,7 @@ export default defineConfig({
   workers: 1,
   retries: 0,
   forbidOnly: true,
-  timeout: 90000,
+  timeout: 120000,
   expect: { timeout: 15000 },
   reporter: [['list']],
   outputDir: 'test-results',

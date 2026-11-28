@@ -1,44 +1,35 @@
 <script setup>
 import { reactive, ref } from 'vue'
-import { getAiPropertyRecommendations } from './ai-api.js'
+import { advisorView, getAiPropertyRecommendations } from './ai-api.js'
 import { formatMoney } from './model.js'
 import { parseTags } from '../properties/model.js'
+import { propertyImage, propertyImageAlt } from '../properties/images.js'
+import AppIcon from '../shared/presentation/components/AppIcon.vue'
 
-const form = reactive({
-  monthlyIncome: '6500',
-  currency: 'PEN',
-  downPayment: '45000',
-  preferredDistrict: '',
-  maxLoanTermMonths: 240,
-  tags: 'terraza, estacionamiento',
-})
+const dtiWidth = rec => `${Math.min(100, Math.max(0, (Number(rec.debtToIncomeRatioPercent) || 0) / 50 * 100))}%`
 
+const form = reactive({ monthlyIncome: '6500', currency: 'PEN', downPaymentAvailable: '45000', preferredDistrict: '', desiredTermYears: 20, tags: 'terraza, estacionamiento' })
 const loading = ref(false)
 const error = ref('')
-const evaluation = ref(null)
-const recommendations = ref([])
-const evaluated = ref(false)
+const view = ref(null)
 
 async function submitAdvisor() {
-  if (!form.monthlyIncome || Number(form.monthlyIncome) <= 0) {
-    error.value = 'Ingresa un monto de ingreso mensual válido mayor a cero.'
+  if (!/^\d{1,16}(?:\.\d{1,2})?$/.test(String(form.monthlyIncome).trim()) || Number(form.monthlyIncome) < 500) {
+    error.value = 'Ingresa un ingreso mensual válido de al menos 500.00.'
     return
   }
   loading.value = true
   error.value = ''
-  evaluated.value = false
+  view.value = null
   try {
-    const res = await getAiPropertyRecommendations({
+    view.value = advisorView(await getAiPropertyRecommendations({
       monthlyIncome: form.monthlyIncome,
       currency: form.currency,
-      downPayment: form.downPayment || '0',
+      downPaymentAvailable: form.downPaymentAvailable,
       preferredDistrict: form.preferredDistrict,
-      maxLoanTermMonths: form.maxLoanTermMonths,
-      preferredTags: parseTags(form.tags),
-    })
-    evaluation.value = res.borrowerEvaluation
-    recommendations.value = res.recommendations || []
-    evaluated.value = true
+      desiredTermYears: form.desiredTermYears,
+      preferenceTags: parseTags(form.tags),
+    }))
   } catch (err) {
     error.value = err.message || 'Error al consultar el Asistente Hipotecario IA.'
   } finally {
@@ -50,105 +41,61 @@ async function submitAdvisor() {
 <template>
   <section class="content-card ai-advisor-card" aria-labelledby="ai-advisor-title">
     <div class="ai-header">
-      <div class="ai-title-wrap">
-        <span class="ai-chip">Motor IA SBS</span>
-        <h2 id="ai-advisor-title">Asistente Hipotecario Inteligente</h2>
+      <span class="ai-icon" aria-hidden="true"><AppIcon name="sparkles" :size="22" /></span>
+      <div>
+        <div class="ai-title-wrap">
+          <h2 id="ai-advisor-title">Asistente Hipotecario Inteligente</h2>
+          <span class="pill">Motor IA SBS</span>
+        </div>
+        <p class="field-help">Evalúa de forma determinista tu capacidad de pago (límite 35 % SBS, TEA de referencia 9.50 %) y ordena los inmuebles del catálogo en tu moneda.</p>
       </div>
-      <p class="field-help">
-        Analiza determinísticamente tu capacidad financiera (ratio 35% SBS) y busca los inmuebles óptimos que calzan con tu presupuesto y preferencias.
-      </p>
     </div>
 
     <form class="account-form" novalidate :aria-busy="loading" @submit.prevent="submitAdvisor">
       <fieldset :disabled="loading">
-        <div class="advisor-form-grid">
-          <div class="form-field">
-            <label for="ai-income">Ingreso Mensual Neto</label>
-            <input id="ai-income" v-model="form.monthlyIncome" type="number" step="0.01" min="100" required />
-          </div>
-          <div class="form-field">
-            <label for="ai-currency">Moneda</label>
-            <select id="ai-currency" v-model="form.currency">
-              <option value="PEN">Soles (PEN)</option>
-              <option value="USD">Dólares (USD)</option>
-            </select>
-          </div>
-          <div class="form-field">
-            <label for="ai-down">Cuota Inicial Disponible</label>
-            <input id="ai-down" v-model="form.downPayment" type="number" step="0.01" min="0" />
-          </div>
-          <div class="form-field">
-            <label for="ai-term">Plazo Máximo Deseado</label>
-            <select id="ai-term" v-model="form.maxLoanTermMonths">
-              <option :value="120">10 años (120 meses)</option>
-              <option :value="180">15 años (180 meses)</option>
-              <option :value="240">20 años (240 meses)</option>
-              <option :value="300">25 años (300 meses)</option>
-              <option :value="360">30 años (360 meses)</option>
-            </select>
-          </div>
-          <div class="form-field">
-            <label for="ai-district">Distrito Preferido (opcional)</label>
-            <input id="ai-district" v-model="form.preferredDistrict" type="text" placeholder="Ej. Miraflores, San Isidro, Surco" maxlength="60" />
-          </div>
-          <div class="form-field">
-            <label for="ai-tags">Características / Etiquetas</label>
-            <input id="ai-tags" v-model="form.tags" type="text" placeholder="Ej. terraza, estacionamiento, balcón" />
-          </div>
+        <div class="form-grid">
+          <div class="form-field"><label for="ai-income">Ingreso mensual neto</label><input id="ai-income" v-model="form.monthlyIncome" type="text" inputmode="decimal" required /></div>
+          <div class="form-field"><label for="ai-currency">Moneda</label><select id="ai-currency" v-model="form.currency"><option value="PEN">Soles (PEN)</option><option value="USD">Dólares (USD)</option></select></div>
+          <div class="form-field"><label for="ai-down">Cuota inicial disponible (opcional)</label><input id="ai-down" v-model="form.downPaymentAvailable" type="text" inputmode="decimal" /></div>
+          <div class="form-field"><label for="ai-term">Plazo deseado</label><select id="ai-term" v-model.number="form.desiredTermYears"><option :value="10">10 años</option><option :value="15">15 años</option><option :value="20">20 años</option><option :value="25">25 años</option><option :value="30">30 años</option></select></div>
+          <div class="form-field"><label for="ai-district">Distrito preferido (opcional)</label><input id="ai-district" v-model="form.preferredDistrict" type="text" placeholder="Ej. Miraflores, San Isidro, Surco" maxlength="60" /></div>
+          <div class="form-field"><label for="ai-tags">Características / etiquetas</label><input id="ai-tags" v-model="form.tags" type="text" placeholder="Ej. terraza, estacionamiento" /></div>
         </div>
-
-        <button class="primary-button" type="submit">
-          {{ loading ? 'Evaluando con IA…' : 'Buscar Inmuebles Recomendados' }}
-        </button>
+        <div class="ai-actions"><button class="primary-button" type="submit"><AppIcon name="search" :size="16" />{{ loading ? 'Evaluando con IA…' : 'Buscar Inmuebles Recomendados' }}</button></div>
       </fieldset>
     </form>
 
     <p v-if="error" class="form-error" role="alert">{{ error }}</p>
 
-    <!-- Resumen de Evaluación Financiera -->
-    <div v-if="evaluated && evaluation" class="evaluation-summary">
+    <div v-if="view" class="evaluation-summary">
       <h3>Perfil Financiero Estimado (Normativa SBS)</h3>
       <dl class="metrics-grid">
-        <dt>Cuota Máxima Admisible (35%)</dt>
-        <dd>{{ formatMoney(evaluation.maxAffordableMonthlyInstallment, evaluation.currency) }} / mes</dd>
-        <dt>Capacidad de Financiamiento</dt>
-        <dd>{{ formatMoney(evaluation.maxLoanCapacity, evaluation.currency) }}</dd>
-        <dt>Presupuesto Máximo Inmueble</dt>
-        <dd>{{ formatMoney(evaluation.maxPropertyPrice, evaluation.currency) }}</dd>
-        <dt>Relación Cuota / Ingreso</dt>
-        <dd>{{ evaluation.debtToIncomeRatioPercent }}</dd>
+        <div class="metric-highlight"><dt>Cuota máxima admisible (35 %)</dt><dd class="ai-max-installment">{{ formatMoney(view.maxAllowableInstallment, view.currency) }} / mes</dd></div>
+        <div><dt>Inmuebles analizados</dt><dd>{{ view.analyzed }}</dd></div>
+        <div><dt>Inmuebles viables</dt><dd>{{ view.viable }}</dd></div>
       </dl>
+      <p class="field-help ai-summary">{{ view.summary }}</p>
     </div>
 
-    <!-- Lista de Inmuebles Recomendados -->
-    <div v-if="evaluated" class="recommendations-container">
+    <div v-if="view" class="recommendations-container">
       <h3>Inmuebles Sugeridos por Compatibilidad</h3>
-      <p v-if="!recommendations.length" role="status">
-        No se encontraron inmuebles registrados que cumplan simultáneamente con tu cuota máxima admisible y filtros actuales. Prueba ampliando el plazo o aumentando la cuota inicial.
-      </p>
-
+      <p v-if="!view.recommendations.length" role="status">No hay inmuebles en {{ view.currency }} para evaluar. Prueba con otra moneda o registra inmuebles.</p>
       <ul v-else class="property-grid">
-        <li v-for="rec in recommendations" :key="rec.propertyId" class="content-card recommendation-card">
-          <div class="rec-score-header">
-            <span class="score-badge">Score: {{ rec.recommendationScore }}/100</span>
-            <span v-if="rec.legitimacyStatus === 'VERIFIED'" class="verified-tag">✓ SUNARP Verificado</span>
+        <li v-for="rec in view.recommendations" :key="rec.propertyId" class="content-card recommendation-card">
+          <div class="rec-photo"><img :src="propertyImage({ id: rec.propertyId, title: rec.title, address: rec.address })" :alt="propertyImageAlt({ title: rec.title, address: rec.address })" loading="lazy" width="800" height="500" /><span class="score-badge">Score: {{ rec.relevanceScore }}/100</span></div>
+          <div class="rec-body">
+            <span class="pill" :class="rec.financiallyViable ? 'pill-success' : 'pill-warning'">{{ rec.viabilityLabel }}</span>
+            <h4 class="clamp-2" :title="rec.title">{{ rec.title }}</h4>
+            <p class="rec-address"><AppIcon name="pin" :size="14" />{{ rec.address }}</p>
+            <p class="property-price">{{ formatMoney(rec.price, rec.currency) }}</p>
+            <dl class="rec-metrics">
+              <dt>Cuota estimada</dt><dd><strong>{{ formatMoney(rec.estimatedMonthlyInstallment, rec.currency) }}</strong></dd>
+              <dt>Carga financiera</dt><dd>{{ rec.ratioLabel }} del ingreso neto</dd>
+            </dl>
+            <div class="dti-bar" aria-hidden="true"><span class="dti-fill" :class="{ over: !rec.financiallyViable }" :style="{ width: dtiWidth(rec) }"></span><span class="dti-limit"></span></div>
+            <p class="dti-scale" aria-hidden="true"><span>0 %</span><span>Límite 35 %</span><span>50 %</span></p>
+            <p class="rec-reason"><AppIcon name="info" :size="14" />{{ rec.recommendationReason }}</p>
           </div>
-          <h4>{{ rec.title }}</h4>
-          <p class="rec-address">{{ rec.address }} ({{ rec.district }})</p>
-          <p class="property-price">{{ formatMoney(rec.price, rec.currency) }}</p>
-
-          <dl class="rec-metrics">
-            <dt>Cuota estimada:</dt>
-            <dd><strong>{{ formatMoney(rec.estimatedMonthlyInstallment, rec.currency) }}</strong></dd>
-            <dt>Carga financiera:</dt>
-            <dd>{{ rec.debtRatioPercent }} del ingreso neto</dd>
-          </dl>
-
-          <p class="rec-reason">💡 {{ rec.recommendationReason }}</p>
-
-          <ul v-if="rec.tags?.length" class="tag-list">
-            <li v-for="tag in rec.tags" :key="tag">{{ tag }}</li>
-          </ul>
         </li>
       </ul>
     </div>
@@ -156,87 +103,35 @@ async function submitAdvisor() {
 </template>
 
 <style scoped>
-.ai-advisor-card {
-  margin-top: 2rem;
-  border: 1px solid #c7d2fe;
-  background: #f8fafc;
-  border-radius: 8px;
-  padding: 1.5rem;
-}
-.ai-header {
-  margin-bottom: 1.5rem;
-}
-.ai-title-wrap {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-.ai-chip {
-  background: #4f46e5;
-  color: white;
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 0.2rem 0.5rem;
-  border-radius: 9999px;
-  text-transform: uppercase;
-}
-.advisor-form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-.evaluation-summary {
-  margin-top: 1.5rem;
-  padding: 1rem;
-  background: white;
-  border-radius: 6px;
-  border: 1px solid #e2e8f0;
-}
-.recommendations-container {
-  margin-top: 1.5rem;
-}
-.recommendation-card {
-  border-left: 4px solid #4f46e5;
-  background: white;
-}
-.rec-score-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.5rem;
-}
-.score-badge {
-  background: #e0e7ff;
-  color: #3730a3;
-  font-weight: 700;
-  font-size: 0.85rem;
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
-}
-.verified-tag {
-  color: #166534;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-.rec-address {
-  color: #64748b;
-  font-size: 0.9rem;
-}
-.rec-metrics {
-  display: grid;
-  grid-template-columns: auto auto;
-  gap: 0.25rem 0.75rem;
-  font-size: 0.85rem;
-  margin: 0.5rem 0;
-}
-.rec-reason {
-  background: #f1f5f9;
-  padding: 0.5rem;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  color: #334155;
-  margin: 0.5rem 0;
-}
+.ai-advisor-card { margin-top: 24px; border-color: var(--cc-soft-border); background: linear-gradient(180deg, #f5f9ff 0%, #fff 140px); }
+.ai-header { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 18px; }
+.ai-icon { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: var(--cc-navy); color: #fff; }
+.ai-title-wrap { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ai-title-wrap h2 { margin: 0; }
+.ai-actions { margin-top: 16px; display: flex; justify-content: flex-end; }
+.evaluation-summary { margin-top: 20px; padding: 16px; background: #fff; border-radius: var(--cc-radius-sm); border: 1px solid var(--cc-border); }
+.evaluation-summary h3 { margin: 0; font-size: 15px; }
+.metric-highlight { background: var(--cc-soft) !important; border-color: var(--cc-soft-border) !important; }
+.metric-highlight dd { color: var(--cc-navy); font-size: 18px; }
+.recommendations-container { margin-top: 20px; }
+.recommendations-container h3 { font-size: 15px; }
+.recommendation-card { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+.rec-photo { position: relative; aspect-ratio: 16 / 10; background: #e2e8f0; }
+.rec-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.score-badge { position: absolute; top: 10px; left: 10px; background: rgba(23, 75, 133, .92); color: #fff; font-weight: 700; font-size: 12.5px; padding: 4px 10px; border-radius: 999px; }
+.rec-body { padding: 14px 16px 16px; display: grid; gap: 6px; }
+.rec-body h4 { margin: 4px 0 0; font-size: 15.5px; }
+.rec-body .pill { justify-self: start; }
+.rec-address { display: flex; gap: 6px; align-items: center; color: var(--cc-text-3); font-size: 13px; margin: 0; }
+.rec-metrics { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 13px; margin: 4px 0 0; }
+.rec-metrics dt { color: var(--cc-text-3); }
+.rec-metrics dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.dti-bar { position: relative; height: 8px; border-radius: 999px; background: #e2e8f0; overflow: hidden; margin-top: 4px; }
+.dti-fill { position: absolute; inset: 0 auto 0 0; background: var(--cc-blue); border-radius: 999px; }
+.dti-fill.over { background: var(--cc-warning); }
+.dti-limit { position: absolute; top: 0; bottom: 0; left: 70%; width: 2px; background: var(--cc-navy); }
+.dti-scale { display: flex; justify-content: space-between; font-size: 11px; color: var(--cc-text-3); margin: 0; }
+.dti-scale span:nth-child(2) { margin-left: 30%; }
+.rec-reason { display: flex; gap: 6px; align-items: flex-start; background: var(--cc-canvas); border: 1px solid var(--cc-border); padding: 8px 10px; border-radius: 8px; font-size: 13px; color: var(--cc-text-2); margin: 4px 0 0; }
+.rec-reason svg { flex: none; margin-top: 2px; }
 </style>

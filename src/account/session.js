@@ -55,3 +55,17 @@ export function startSession(auth) {
 }
 
 scheduleExpiry()
+
+/**
+ * Roles de la sesión para mostrar u ocultar controles (p. ej. emitir versiones, US21). Tras recargar la página solo se
+ * conserva el token: los roles se leen del claim "roles" del JWT. No es una decisión de seguridad: el backend autoriza.
+ */
+export function sessionRoles() {
+  if (Array.isArray(session.user?.roles)) return session.user.roles
+  try {
+    const payload = session.token?.split('.')[1]
+    if (!payload) return []
+    const json = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(payload.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(payload.length / 4) * 4, '=')), c => c.charCodeAt(0))))
+    return Array.isArray(json.roles) ? json.roles.filter(role => typeof role === 'string') : []
+  } catch { return [] }
+}

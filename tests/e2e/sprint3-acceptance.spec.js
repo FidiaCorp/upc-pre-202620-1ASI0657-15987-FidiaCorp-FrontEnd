@@ -1,29 +1,52 @@
-import { test, expect } from '@playwright/test'
-import { api, credentials, fixture, loginUI, logoutUI, propertyAPI, registerAccount, unique } from './helpers.js'
+import { readFile } from 'node:fs/promises'
+import { expect } from '@playwright/test'
+import { api, fixture, issueOffer, loginAPI, loginUI, propertyAPI, registerAccount, unique, test } from './helpers.js'
 
-test('sprint 3 (US06): validación de suscripción activa y verificación de pago en perfil', async ({ page, request }) => {
+// Sin mocks ni intercepción de rutas: cada paso llega a los microservicios reales a través del API Gateway :8080.
+const ZIP_SIGNATURE = [0x50, 0x4b, 0x03, 0x04]
+
+async function downloadBytes(page, trigger) {
+  const [download] = await Promise.all([page.waitForEvent('download'), trigger()])
+  const bytes = await readFile(await download.path())
+  return { bytes, name: download.suggestedFilename() }
+}
+
+test('sprint 3 (US05 + US06): pasarela rechaza por fondos, reintento con otro procesador y suscripción activa', async ({ page, request }) => {
   const account = await registerAccount(request)
   const token = await loginUI(page, account)
-
-  // Verify subscription status is visible in Profile
   await expect(page.locator('#sub-title')).toHaveText('Estado de Suscripción')
-  await expect(page.locator('.badge')).toBeVisible()
+  await expect(page.locator('.subscription-payments')).toHaveText('0')
+  await page.getByRole('button', { name: 'Activar suscripción', exact: true }).click()
+  await expect(page.getByRole('radio', { name: 'Izipay (sandbox)' })).toBeVisible()
+  await page.locator('#sub-plan').selectOption('PREMIUM')
+  await expect(page.getByText('Total a cobrar: S/ 49.90')).toBeVisible()
 
-  // Click renew / upgrade plan
-  await page.getByRole('button', { name: /Activar suscripción|Mejorar o renovar plan/, exact: true }).click()
-  await page.locator('#sub-ref').fill(`OP-${unique()}`)
-  await page.getByRole('button', { name: 'Validar pago', exact: true }).click()
+  await page.getByRole('radio', { name: 'Izipay (sandbox)' }).check()
+  await page.locator('#sub-card-token').fill('tok_DECLINED_INSUFFICIENT_FUNDS')
+  await page.getByRole('button', { name: /^Pagar con Izipay/ }).click()
+  await expect(page.getByRole('alert')).toContainText('Fondos insuficientes')
+  await expect(page.locator('.decline-code')).toContainText('INSUFFICIENT_FUNDS')
 
-  // Verify successful status notification
+  await page.getByRole('radio', { name: 'Culqi (sandbox)' }).check()
+  await page.locator('#sub-card-token').fill('tok_visa_approved')
+  await page.getByRole('button', { name: /^Pagar con Culqi/ }).click()
   await expect(page.getByRole('status').filter({ hasText: 'Pago verificado' })).toBeVisible()
+  await expect(page.locator('.subscription-badge')).toHaveText('ACTIVA')
+  await expect(page.locator('.subscription-plan')).toHaveText('PREMIUM')
+  await expect(page.locator('.subscription-payments')).toHaveText('1')
+
+  const status = await api(request, 'get', '/subscriptions/status', { token })
+  expect(status).toMatchObject({ planName: 'PREMIUM', status: 'ACTIVE', active: true, paymentCount: 1 })
+  // Anti auto-activación: un monto arbitrario con referencia inventada nunca activa PRO.
+  const other = await registerAccount(request)
+  const otherAuth = await loginAPI(request, other)
+  await api(request, 'post', '/payments/verify', { token: otherAuth.token, status: 422, body: { transactionReference: `CULQI-${'a'.repeat(32)}-${'b'.repeat(40)}`, paymentMethod: 'CULQI', amount: '0.01', currency: 'PEN', planName: 'PRO' } })
 })
 
-test('sprint 3 (US09): validación registral SUNARP del inmueble en el catálogo', async ({ page, request }) => {
+test('sprint 3 (US09): validación registral SUNARP del inmueble propio con certificado SHA-256', async ({ page, request }) => {
   const account = await registerAccount(request)
   const token = await loginUI(page, account)
   const suffix = unique()
-
-  // Register a new property
   await page.goto('/realState')
   await page.getByRole('button', { name: 'Registrar inmueble', exact: true }).click()
   await page.locator('#property-title').fill(`Inmueble Sunarp ${suffix}`)
@@ -32,79 +55,136 @@ test('sprint 3 (US09): validación registral SUNARP del inmueble en el catálogo
   await page.locator('#property-tags').fill('sol, jardin, la molina')
   await page.getByRole('button', { name: 'Guardar inmueble', exact: true }).click()
   await expect(page.getByRole('status').filter({ hasText: 'Inmueble registrado' })).toBeVisible()
-
-  // Filter for our property
   await page.locator('#property-query').fill(suffix)
   await page.getByRole('button', { name: 'Aplicar filtros', exact: true }).click()
 
   const card = page.locator('.property-card').filter({ hasText: `Inmueble Sunarp ${suffix}` })
-  await expect(card).toBeVisible()
-  await expect(card.locator('.legitimacy-badge')).toBeVisible()
-
-  // Trigger SUNARP verification modal
+  await expect(card.locator('.legitimacy-badge')).toHaveText('Sin verificación registral')
   await card.getByRole('button', { name: 'Validar SUNARP', exact: true }).click()
-  await page.locator('#reg-entry').fill(`14298172`)
-  await page.locator('#reg-sheet').fill(`P03192831`)
+  await page.locator('#reg-number').fill('14298172')
+  await page.locator('#reg-owner').fill('Prueba Integrada')
   await page.getByRole('button', { name: 'Consultar SUNARP', exact: true }).click()
-
-  // Verification completed
   await expect(card.locator('.badge-verified')).toContainText('Verificado SUNARP')
+  await expect(card.locator('.certificate-hash')).toHaveText(/^[0-9a-f]{16}…$/)
+  await expect(card.getByRole('button', { name: 'Validar SUNARP', exact: true })).toHaveCount(0)
+
+  const listed = await api(request, 'get', `/properties?mine=true&q=${suffix}`, { token })
+  const legitimacy = await api(request, 'get', `/properties/${listed.items[0].id}/legitimacy`, { token })
+  expect(legitimacy.status).toBe('VERIFIED_GENUINE')
+  expect(legitimacy.certificateHash).toMatch(/^[0-9a-f]{64}$/)
+  expect(listed.items[0].certificateHash).toBe(legitimacy.certificateHash)
+  // BOLA/IDOR: otra cuenta no puede alterar la legitimidad de un inmueble ajeno.
+  const intruder = await loginAPI(request, fixture.otherClient)
+  await api(request, 'post', `/properties/${listed.items[0].id}/verify-registry`, { token: intruder.token, status: 403, body: { registryNumber: '99999999' } })
 })
 
-test('sprint 3 (US12): exportación y descarga de cronograma en formato XLSX', async ({ page, request }) => {
+test('sprint 3 (US12): descarga binaria real del cronograma .xlsx (simulación y oferta) con firma ZIP PK', async ({ page, request }) => {
   const account = await registerAccount(request)
   await loginUI(page, account)
-
   await page.goto('/simulations')
   await page.locator('#sim-loanAmount').fill('150000.00')
   await page.locator('#sim-propertyValue').fill('200000.00')
   await page.locator('#sim-termMonths').fill('60')
   await page.locator('#sim-teaPercent').fill('9.5')
   await page.locator('#sim-startDate').fill('2026-01-01')
-
   await page.getByRole('button', { name: 'Calcular simulación', exact: true }).click()
-  await expect(page.locator('#schedule-title')).toBeVisible()
+  await expect(page.locator('.schedule-table tbody tr')).toHaveCount(60)
+  const simulation = await downloadBytes(page, () => page.getByRole('button', { name: 'Descargar cronograma (.xlsx)', exact: true }).click())
+  expect([...simulation.bytes.subarray(0, 4)]).toEqual(ZIP_SIGNATURE)
+  expect(simulation.bytes.length).toBeGreaterThan(1000)
+  expect(simulation.name).toMatch(/^cronograma_simulacion_[0-9a-f-]{36}\.xlsx$/)
+  expect(simulation.bytes.includes(Buffer.from('xl/worksheets/sheet1.xml'))).toBe(true)
 
-  // The export button is rendered
-  const exportBtn = page.getByRole('button', { name: /Descargar cronograma \(\.xlsx\)/, exact: true })
-  await expect(exportBtn).toBeVisible()
+  const advisor = await loginAPI(request, fixture.realtor)
+  const property = await propertyAPI(request, advisor.token)
+  const offer = await issueOffer(request, advisor.token, property.id, account.email, { termMonths: 36 })
+  await page.goto(`/offers/${offer.id}`)
+  await page.getByRole('button', { name: 'Generar o recuperar cronograma de oferta', exact: true }).click()
+  await expect(page.locator('.schedule-table tbody tr')).toHaveCount(36)
+  const offerFile = await downloadBytes(page, () => page.getByRole('button', { name: 'Exportar XLSX', exact: true }).click())
+  expect([...offerFile.bytes.subarray(0, 4)]).toEqual(ZIP_SIGNATURE)
+  expect(offerFile.name).toBe(`cronograma_oferta_${offer.id}.xlsx`)
 })
 
-test('sprint 3 (US15): asistente hipotecario inteligente con recomendaciones deterministas SBS', async ({ page, request }) => {
+test('sprint 3 (US15): asistente hipotecario con contrato real, límite 35 % SBS y moneda aislada', async ({ page, request }) => {
   const account = await registerAccount(request)
-  await loginUI(page, account)
-
+  const token = await loginUI(page, account)
+  const suffix = unique()
+  await api(request, 'post', '/properties', { token, status: 201, body: { title: `Depa IA ${suffix}`, address: 'Calle Berlín 450, Miraflores', description: 'E2E', price: '260000.00', currency: 'PEN', tags: ['terraza'] } })
   await page.goto('/simulations')
   await expect(page.locator('#ai-advisor-title')).toHaveText('Asistente Hipotecario Inteligente')
-
-  await page.locator('#ai-income').fill('8000')
-  await page.locator('#ai-down').fill('50000')
+  await page.locator('#ai-income').fill('8000.00')
+  await page.locator('#ai-down').fill('60000.00')
   await page.locator('#ai-district').fill('Miraflores')
-
+  await page.locator('#ai-tags').fill('terraza')
   await page.getByRole('button', { name: 'Buscar Inmuebles Recomendados', exact: true }).click()
-
-  // Profile evaluation shown
-  await expect(page.locator('.evaluation-summary')).toBeVisible()
   await expect(page.locator('.evaluation-summary')).toContainText('Normativa SBS')
+  await expect(page.locator('.ai-max-installment')).toHaveText('S/ 2,800.00 / mes')
+  const card = page.locator('.recommendation-card').filter({ hasText: `Depa IA ${suffix}` })
+  await expect(card).toBeVisible()
+  await expect(card).toContainText('Dentro del 35 % SBS')
+  await expect(card.locator('.score-badge')).toHaveText(/Score: (\d+)\/100/)
+  const response = await api(request, 'post', '/ai/recommendations', { token, body: { monthlyIncome: '8000.00', currency: 'USD', downPaymentAvailable: null, preferredDistrict: null, desiredTermYears: 20, preferenceTags: [] } })
+  expect(response.recommendations.every(r => r.currency === 'USD')).toBe(true)
 })
 
-test('sprint 3 (US17 y US18): bloqueo de usuarios indeseados y exportación de historial de mensajería', async ({ page, request }) => {
+test('sprint 3 (US16 + US18): contactar desde la ficha, conversación real con UUID y exportación .txt/.json', async ({ page, request }) => {
+  const owner = await registerAccount(request)
+  const ownerAuth = await loginAPI(request, owner)
+  const suffix = unique()
+  const property = await api(request, 'post', '/properties', { token: ownerAuth.token, status: 201, body: { title: `Casa contacto ${suffix}`, address: 'Barranco, Lima', description: 'E2E', price: '410000.00', currency: 'PEN', tags: [] } })
+  const buyer = await registerAccount(request)
+  await loginUI(page, buyer)
+  await page.goto('/realState')
+  await page.locator('#property-query').fill(suffix)
+  await page.getByRole('button', { name: 'Aplicar filtros', exact: true }).click()
+  await page.getByRole('button', { name: `Contactar al propietario de Casa contacto ${suffix}`, exact: true }).click()
+  await expect(page).toHaveURL(/\/notifications\?conversation=[0-9a-f-]{36}$/)
+  const conversationId = new URL(page.url()).searchParams.get('conversation')
+  await expect(page.locator('.conversation-id')).toHaveText(conversationId)
+  const message = `¿Sigue disponible la casa ${suffix}?`
+  await page.locator('#msg-content').fill(message)
+  await page.getByRole('button', { name: 'Enviar Mensaje', exact: true }).click()
+  await expect(page.locator('.message-outgoing .message-content')).toHaveText(message)
+
+  const inbox = await api(request, 'get', '/messages/conversations', { token: ownerAuth.token })
+  expect(inbox).toHaveLength(1)
+  expect(inbox[0]).toMatchObject({ conversationId, propertyId: property.id, counterpartId: buyer.id, messageCount: 1 })
+  await api(request, 'post', '/messages', { token: ownerAuth.token, body: { conversationId, content: 'Sí, coordinemos una visita.' } })
+  await page.reload()
+  await expect(page.locator('.message-incoming .message-content')).toHaveText('Sí, coordinemos una visita.')
+
+  const txt = await downloadBytes(page, () => page.getByRole('button', { name: /Descargar historial \(\.txt\)/ }).click())
+  expect(txt.name).toBe(`historial_conversacion_${conversationId}.txt`)
+  expect(txt.bytes.toString('utf8')).toContain(message)
+  const json = await downloadBytes(page, () => page.getByRole('button', { name: /Exportar \(\.json\)/ }).click())
+  expect(JSON.parse(json.bytes.toString('utf8'))).toMatchObject({ conversationId, totalMessages: 2 })
+  // Un tercero no puede leer ni exportar la conversación (403).
+  const intruder = await loginAPI(request, fixture.otherClient)
+  await api(request, 'get', `/messages/conversations/${conversationId}/messages`, { token: intruder.token, status: 403 })
+  await api(request, 'get', `/messages/conversations/${conversationId}/export/json`, { token: intruder.token, status: 403 })
+})
+
+test('sprint 3 (US17): bloqueo real por UUID dinámico impide mensajes (409) y se puede revertir', async ({ page, request }) => {
   const account = await registerAccount(request)
   await loginUI(page, account)
-
+  const target = await registerAccount(request)
+  const targetAuth = await loginAPI(request, target)
   await page.goto('/notifications')
   await expect(page.locator('#messaging-heading')).toBeVisible()
-
-  // Export buttons visible
-  await expect(page.getByRole('button', { name: /Descargar historial \(\.txt\)/, exact: true })).toBeVisible()
-  await expect(page.getByRole('button', { name: /Exportar \(\.json\)/, exact: true })).toBeVisible()
-
-  // Navigate to block controls tab
-  await page.getByRole('button', { name: /Control de Bloqueos/, exact: true }).click()
-  const targetUuid = 'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22'
-  await page.locator('#block-target').fill(targetUuid)
+  await page.getByRole('button', { name: /Control de Bloqueos/ }).click()
+  await page.locator('#block-target').fill(target.id)
   await page.locator('#block-reason').fill('Contacto inapropiado')
   await page.getByRole('button', { name: 'Bloquear Usuario', exact: true }).click()
-
   await expect(page.getByRole('status').filter({ hasText: 'bloqueado exitosamente' })).toBeVisible()
+  const item = page.locator('.blocked-item').filter({ hasText: target.id })
+  await expect(item).toContainText('Contacto inapropiado')
+  await expect(page.getByText('Usuario: undefined')).toHaveCount(0)
+
+  await api(request, 'post', '/messages/conversations', { token: targetAuth.token, status: 409, body: { recipientId: account.id } })
+  await item.getByRole('button', { name: 'Desbloquear', exact: true }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'desbloqueado' })).toBeVisible()
+  await expect(page.locator('.blocked-item')).toHaveCount(0)
+  const conversation = await api(request, 'post', '/messages/conversations', { token: targetAuth.token, status: 201, body: { recipientId: account.id } })
+  expect(conversation.counterpartId).toBe(account.id)
 })

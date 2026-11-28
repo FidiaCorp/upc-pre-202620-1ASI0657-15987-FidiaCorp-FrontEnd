@@ -1,0 +1,4300 @@
+{
+  "openapi" : "3.0.1",
+  "info" : {
+    "title" : "CrediCasa API REST (FidiaCorp)",
+    "description" : "API v1.3.0 de CrediCasa (curso 1ASI0657, NRC 15987): cuentas y TOTP, catálogo con verificación registral SUNARP sellada con SHA-256, ofertas DEMO, avisos, cronogramas persistentes con exportación .xlsx, suscripciones con pasarelas sandbox (Culqi, Izipay, Stripe), asesor hipotecario determinista y mensajería privada con membresía estricta. BCP, Interbank, SUNARP, las pasarelas y las referencias SBS se representan mediante datos/adaptadores simulados; no son aprobaciones bancarias, cobros reales ni consultas oficiales en tiempo real. No se publica una garantía de latencia. Los permisos por recurso se obtienen del principal autenticado. Los errores siguen RFC 7807 (application/problem+json). Los importes y tasas de catálogo, ofertas y simulaciones se devuelven como cadenas decimales sin notación científica; el DTO bancario heredado usa números JSON.",
+    "version" : "1.3.0"
+  },
+  "servers" : [ {
+    "url" : "http://localhost:40451",
+    "description" : "Generated server url"
+  } ],
+  "tags" : [ {
+    "name" : "Acceso"
+  }, {
+    "name" : "Perfil"
+  }, {
+    "name" : "Segundo factor"
+  }, {
+    "name" : "Inmuebles"
+  }, {
+    "name" : "Ofertas DEMO"
+  }, {
+    "name" : "Cronogramas"
+  }, {
+    "name" : "Avisos"
+  }, {
+    "name" : "Referencias DEMO"
+  }, {
+    "name" : "Suscripciones (US06)"
+  }, {
+    "name" : "Pagos (US05)"
+  }, {
+    "name" : "Pagos (US06)"
+  }, {
+    "name" : "Inmuebles (US09)"
+  }, {
+    "name" : "Cronogramas (US12)"
+  }, {
+    "name" : "Asistente IA (US15)"
+  }, {
+    "name" : "Mensajería (US17)"
+  }, {
+    "name" : "Mensajería (US16)"
+  }, {
+    "name" : "Mensajería (US18)"
+  } ],
+  "paths" : {
+    "/api/v1/users/me" : {
+      "get" : {
+        "tags" : [ "Perfil" ],
+        "summary" : "Consultar el perfil propio",
+        "description" : "La identidad procede del UUID del JWT; no existe consulta de perfiles ajenos.",
+        "operationId" : "getProfile",
+        "responses" : {
+          "200" : {
+            "description" : "Operación completada.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AccountProfileResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      },
+      "put" : {
+        "tags" : [ "Perfil" ],
+        "summary" : "Actualizar el perfil propio",
+        "description" : "firstName, lastName y email son obligatorios. El UUID del JWT permanece estable al cambiar el correo; roles no se modifican.",
+        "operationId" : "updateProfile",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateProfileRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Operación completada.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AccountProfileResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "409" : {
+            "description" : "Correo ya registrado o actualización concurrente.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/users/me/two-factor/setup" : {
+      "post" : {
+        "tags" : [ "Segundo factor" ],
+        "summary" : "Generar una configuración TOTP pendiente",
+        "description" : "Exige contraseña. Devuelve secret, otpauthUri y expiresIn=600 segundos con Cache-Control:no-store. Regenerar reemplaza un secreto pendiente, no uno activo, y no reinicia el bloqueo. El secreto se cifra en reposo con clave de entorno.",
+        "operationId" : "setup",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TwoFactorSetupRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Operación completada.",
+            "headers" : {
+              "Cache-Control" : {
+                "schema" : {
+                  "type" : "string",
+                  "example" : "no-store"
+                }
+              }
+            },
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Setup"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON. Si falla contraseña/OTP con JWT válido, el cuerpo TwoFactorErrorResponse incluye INVALID_CREDENTIALS o TWO_FACTOR_INVALID; no implica sesión expirada.",
+            "x-application-error-schema" : {
+              "$ref" : "#/components/schemas/TwoFactorErrorResponse"
+            }
+          },
+          "409" : {
+            "description" : "Estado incompatible: TWO_FACTOR_ALREADY_ENABLED o TWO_FACTOR_NOT_ENABLED.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TwoFactorErrorResponse"
+                }
+              }
+            }
+          },
+          "503" : {
+            "description" : "TWO_FACTOR_UNAVAILABLE: clave ausente/incorrecta o secreto no descifrable.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TwoFactorErrorResponse"
+                }
+              }
+            }
+          },
+          "429" : {
+            "description" : "TWO_FACTOR_LOCKED: cinco fallos bloquean 15 minutos; contador persistente.",
+            "headers" : {
+              "Retry-After" : {
+                "description" : "Segundos restantes, legibles mediante CORS.",
+                "schema" : {
+                  "maximum" : 900,
+                  "minimum" : 1,
+                  "type" : "integer",
+                  "format" : "int32"
+                }
+              }
+            },
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TwoFactorErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/users/me/two-factor/disable" : {
+      "post" : {
+        "tags" : [ "Segundo factor" ],
+        "summary" : "Desactivar TOTP propio",
+        "description" : "Exige contraseña y OTP nuevo; un código ya consumido no se admite. Elimina el secreto y mantiene el primer factor.",
+        "operationId" : "disable",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TwoFactorDisableRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Operación completada.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Status"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON. Si falla contraseña/OTP con JWT válido, el cuerpo TwoFactorErrorResponse incluye INVALID_CREDENTIALS o TWO_FACTOR_INVALID; no implica sesión expirada.",
+            "x-application-error-schema" : {
+              "$ref" : "#/components/schemas/TwoFactorErrorResponse"
+            }
+          },
+          "409" : {
+            "description" : "Estado incompatible: TWO_FACTOR_ALREADY_ENABLED o TWO_FACTOR_NOT_ENABLED.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TwoFactorErrorResponse"
+                }
+              }
+            }
+          },
+          "503" : {
+            "description" : "TWO_FACTOR_UNAVAILABLE: clave ausente/incorrecta o secreto no descifrable.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TwoFactorErrorResponse"
+                }
+              }
+            }
+          },
+          "429" : {
+            "description" : "TWO_FACTOR_LOCKED: cinco fallos bloquean 15 minutos; contador persistente.",
+            "headers" : {
+              "Retry-After" : {
+                "description" : "Segundos restantes, legibles mediante CORS.",
+                "schema" : {
+                  "maximum" : 900,
+                  "minimum" : 1,
+                  "type" : "integer",
+                  "format" : "int32"
+                }
+              }
+            },
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TwoFactorErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/users/me/two-factor/confirm" : {
+      "post" : {
+        "tags" : [ "Segundo factor" ],
+        "summary" : "Confirmar el TOTP pendiente",
+        "description" : "OTP de seis dígitos del paso actual de 30 segundos, configuración con vigencia 10 minutos. Activa y consume el código; espere al siguiente para otro ingreso u operación. No revoca sesiones previas.",
+        "operationId" : "confirm",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TwoFactorCodeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Operación completada.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Status"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Validación (ErrorResponse) o TWO_FACTOR_SETUP_EXPIRED (TwoFactorErrorResponse): configuración pendiente vencida a los 600 segundos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "anyOf" : [ {
+                    "$ref" : "#/components/schemas/ErrorResponse"
+                  }, {
+                    "$ref" : "#/components/schemas/TwoFactorErrorResponse"
+                  } ]
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON. Si falla contraseña/OTP con JWT válido, el cuerpo TwoFactorErrorResponse incluye INVALID_CREDENTIALS o TWO_FACTOR_INVALID; no implica sesión expirada.",
+            "x-application-error-schema" : {
+              "$ref" : "#/components/schemas/TwoFactorErrorResponse"
+            }
+          },
+          "409" : {
+            "description" : "Estado incompatible: TWO_FACTOR_ALREADY_ENABLED o TWO_FACTOR_NOT_ENABLED.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TwoFactorErrorResponse"
+                }
+              }
+            }
+          },
+          "503" : {
+            "description" : "TWO_FACTOR_UNAVAILABLE: clave ausente/incorrecta o secreto no descifrable.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TwoFactorErrorResponse"
+                }
+              }
+            }
+          },
+          "429" : {
+            "description" : "TWO_FACTOR_LOCKED: cinco fallos bloquean 15 minutos; contador persistente.",
+            "headers" : {
+              "Retry-After" : {
+                "description" : "Segundos restantes, legibles mediante CORS.",
+                "schema" : {
+                  "maximum" : 900,
+                  "minimum" : 1,
+                  "type" : "integer",
+                  "format" : "int32"
+                }
+              }
+            },
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TwoFactorErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/simulations/calculate" : {
+      "post" : {
+        "tags" : [ "Cronogramas" ],
+        "summary" : "Calcular y guardar una simulación propia",
+        "description" : "CLIENT o REALTOR; owner y perfil se derivan de la cuenta. TEA decimal(0,1] hasta 8 decimales, importes positivos 16+2, loan≤property, plazo 1–360 (termYears consistente si se envía). NONE exige 0 meses; TOTAL/PARTIAL 1–36 y menor al plazo. Balón positivo solo al vencimiento y≤loan; seguros/COK[0,1], gastos no negativos. Fecha inicial 1900–9990 y última cuota≤9999. COK 0 es válido; el VAN es loan−pagos descontados. Con gracia total el capital amortizado incluye interés capitalizado.",
+        "operationId" : "calculateSimulation",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SimulationRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Operación completada.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SimulationResponseDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "403" : {
+            "description" : "Rol o permiso por recurso insuficiente."
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/properties" : {
+      "get" : {
+        "tags" : [ "Inmuebles" ],
+        "summary" : "Buscar inmuebles activos",
+        "description" : "CLIENT o REALTOR. q literal sin distinguir mayúsculas en título/dirección/descripción (máximo 120); tags repetidos normalizados se combinan con AND; mine=true limita al principal. page desde 0, size por defecto 20 y rango 1–100; orden createdAt DESC,id DESC. Excluye eliminados.",
+        "operationId" : "search",
+        "parameters" : [ {
+          "name" : "q",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "maxLength" : 120,
+            "minLength" : 0,
+            "type" : "string",
+            "default" : ""
+          }
+        }, {
+          "name" : "tags",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "maxItems" : 20,
+            "minItems" : 0,
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }, {
+          "name" : "mine",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : false
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "minimum" : 0,
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "maximum" : 100,
+            "minimum" : 1,
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Operación completada.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PropertyPageResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "403" : {
+            "description" : "Rol o permiso por recurso insuficiente."
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      },
+      "post" : {
+        "tags" : [ "Inmuebles" ],
+        "summary" : "Registrar un inmueble propio",
+        "description" : "CLIENT o REALTOR. OwnerId se toma del principal. Título 120, dirección 250 y descripción 2000 caracteres; precio positivo 16+2, PEN/USD, hasta 20 etiquetas de 40 caracteres normalizadas NFKC/minúsculas/espacios y sin duplicados.",
+        "operationId" : "create",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreatePropertyRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Operación completada.",
+            "headers" : {
+              "Location" : {
+                "description" : "URI del recurso creado.",
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PropertyResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "403" : {
+            "description" : "Rol o permiso por recurso insuficiente."
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/properties/{id}/verify-registry" : {
+      "post" : {
+        "tags" : [ "Inmuebles (US09)" ],
+        "summary" : "Verificar partida registral del inmueble propio (SUNARP DEMO)",
+        "description" : "Solo el propietario (otro usuario recibe 403). Partida de 8 dígitos; persiste estado, notas, titular y certificateHash SHA-256 sobre propertyId|registryNumber|claimedOwner|status|verifiedAt. La consulta registral es simulada.",
+        "operationId" : "verifyRegistry",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VerifyRegistryRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Operación completada.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PropertyLegitimacyResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "403" : {
+            "description" : "Rol o permiso por recurso insuficiente."
+          },
+          "404" : {
+            "description" : "Recurso inexistente, eliminado o no disponible para el principal.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/payments/verify" : {
+      "post" : {
+        "tags" : [ "Pagos (US06)" ],
+        "summary" : "Verificar la referencia de pago y activar la suscripción",
+        "description" : "Exige transactionReference emitida por /payments/checkout, paymentMethod igual a la pasarela, planName y amount igual a la tarifa oficial en PEN; si no, 422. Idempotente para el mismo titular; una referencia de otra cuenta devuelve 409 sin filtrar el comprobante.",
+        "operationId" : "verifyPayment",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VerifyPaymentRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Operación completada.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PaymentVerificationResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "403" : {
+            "description" : "Rol o permiso por recurso insuficiente."
+          },
+          "409" : {
+            "description" : "La referencia ya fue utilizada por otra cuenta (no se revela el comprobante).",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422" : {
+            "description" : "Monto distinto a la tarifa oficial, moneda distinta de PEN o referencia no emitida por la pasarela.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/payments/checkout" : {
+      "post" : {
+        "tags" : [ "Pagos (US05)" ],
+        "summary" : "Iniciar un cobro sandbox con la pasarela elegida",
+        "description" : "El importe se deriva de la tarifa oficial del plan (no del cliente). Aprobado: 200 con transactionReference firmada HMAC-SHA256 (GATEWAY-nonce-firma) ligada a cuenta, plan, importe y moneda. Token con DECLINED_INSUFFICIENT_FUNDS o DECLINED: 402 Payment Required con status=REJECTED, declineCode y retryAllowed=true para reintentar con otro procesador.",
+        "operationId" : "checkout",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CheckoutRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Operación completada.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CheckoutResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "403" : {
+            "description" : "Rol o permiso por recurso insuficiente."
+          },
+          "402" : {
+            "description" : "Payment Required: la pasarela rechazó el cobro (status=REJECTED, declineCode, retryAllowed=true).",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CheckoutResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/offers" : {
+      "get" : {
+        "tags" : [ "Ofertas DEMO" ],
+        "summary" : "Listar ofertas recibidas propias",
+        "description" : "CLIENT o REALTOR. Solo destinatario; page desde 0,size 20/rango 1–100, orden createdAt DESC,id DESC.",
+        "operationId" : "list",
+        "parameters" : [ {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "minimum" : 0,
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "maximum" : 100,
+            "minimum" : 1,
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Operación completada.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CreditOfferPageResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "403" : {
+            "description" : "Rol o permiso por recurso insuficiente."
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      },
+      "post" : {
+        "tags" : [ "Ofertas DEMO" ],
+        "summary" : "Emitir una oferta DEMO y su aviso de forma atómica",
+        "description" : "Solo REALTOR para una propiedad propia activa y destinatario ROLE_CLIENT resuelto por correo. BCP/INTERBANK; banco y título derivados. Moneda igual a la propiedad, préstamo≤precio, TEA decimal(0,1] hasta 8 decimales, plazo 1–360 y fecha segura. No realiza una aprobación bancaria real.",
+        "operationId" : "issue",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateCreditOfferRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Operación completada.",
+            "headers" : {
+              "Location" : {
+                "description" : "URI del recurso creado.",
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CreditOfferResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "403" : {
+            "description" : "Rol o permiso por recurso insuficiente."
+          },
+          "404" : {
+            "description" : "Recurso inexistente, eliminado o no disponible para el principal.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/offers/{offerId}/schedule" : {
+      "get" : {
+        "tags" : [ "Cronogramas" ],
+        "summary" : "Leer el cronograma ya generado de una oferta",
+        "description" : "Solo destinatario; si aún no existe, la oferta es ajena o no existe, devuelve 404. No recalcula.",
+        "operationId" : "getSchedule",
+        "parameters" : [ {
+          "name" : "offerId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Operación completada.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SimulationResponseDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "403" : {
+            "description" : "Rol o permiso por recurso insuficiente."
+          },
+          "404" : {
+            "description" : "Recurso inexistente, eliminado o no disponible para el principal.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      },
+      "post" : {
+        "tags" : [ "Cronogramas" ],
+        "summary" : "Generar u obtener el cronograma persistido de una oferta",
+        "description" : "Solo destinatario, sin cuerpo. Siempre 200. Bloqueo transaccional e idempotencia también con concurrencia. Términos exclusivamente del snapshot; sin gracia, balón, seguros ni gastos y COK=TEA. Cronograma DEMO, no una TCEA regulatoria de un producto bancario real.",
+        "operationId" : "generateSchedule",
+        "parameters" : [ {
+          "name" : "offerId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Operación completada.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SimulationResponseDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "403" : {
+            "description" : "Rol o permiso por recurso insuficiente."
+          },
+          "404" : {
+            "description" : "Recurso inexistente, eliminado o no disponible para el principal.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/messages" : {
+      "post" : {
+        "tags" : [ "Mensajería (US16)" ],
+        "summary" : "Enviar un mensaje privado en una conversación propia",
+        "description" : "conversationId obligatorio; el destinatario es la contraparte (recipientId opcional debe coincidir). Inexistente 404, ajena 403, bloqueo activo 409.",
+        "operationId" : "sendMessage",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SendMessageRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Operación completada.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ChatMessageResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "403" : {
+            "description" : "Rol o permiso por recurso insuficiente."
+          },
+          "404" : {
+            "description" : "Recurso inexistente, eliminado o no disponible para el principal.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Comunicación restringida: existe un bloqueo activo entre las cuentas.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/messages/conversations" : {
+      "get" : {
+        "tags" : [ "Mensajería (US16)" ],
+        "summary" : "Listar las conversaciones propias",
+        "description" : "Solo conversaciones donde el principal es participante, con contraparte, contador y último mensaje.",
+        "operationId" : "listConversations",
+        "responses" : {
+          "200" : {
+            "description" : "Operación completada.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ConversationResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "403" : {
+            "description" : "Rol o permiso por recurso insuficiente."
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      },
+      "post" : {
+        "tags" : [ "Mensajería (US16)" ],
+        "summary" : "Crear u obtener una conversación con otra cuenta",
+        "description" : "201 al crearla y 200 si ya existía entre ambas cuentas para el mismo propertyId (opcional, inmueble activo). recipientId debe existir; no admite conversaciones consigo mismo; con bloqueo activo devuelve 409.",
+        "operationId" : "startConversation",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateConversationRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Operación completada.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ConversationResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "403" : {
+            "description" : "Rol o permiso por recurso insuficiente."
+          },
+          "404" : {
+            "description" : "Recurso inexistente, eliminado o no disponible para el principal.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Comunicación restringida: existe un bloqueo activo entre las cuentas.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/messages/blocks/{targetUserId}" : {
+      "post" : {
+        "tags" : [ "Mensajería (US17)" ],
+        "summary" : "Bloquear a otro usuario en la mensajería",
+        "description" : "Impide crear conversaciones y enviar mensajes entre ambas cuentas (409). Idempotente.",
+        "operationId" : "blockUser",
+        "parameters" : [ {
+          "name" : "targetUserId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/BlockUserRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Operación completada.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserBlockResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "403" : {
+            "description" : "Rol o permiso por recurso insuficiente."
+          },
+          "404" : {
+            "description" : "Recurso inexistente, eliminado o no disponible para el principal.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      },
+      "delete" : {
+        "tags" : [ "Mensajería (US17)" ],
+        "summary" : "Desbloquear a un usuario previamente bloqueado",
+        "description" : "Restaura la posibilidad de interacción y comunicación mutua.",
+        "operationId" : "unblockUser",
+        "parameters" : [ {
+          "name" : "targetUserId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Operación completada, sin cuerpo."
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "403" : {
+            "description" : "Rol o permiso por recurso insuficiente."
+          },
+          "404" : {
+            "description" : "Recurso inexistente, eliminado o no disponible para el principal.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/auth/register" : {
+      "post" : {
+        "tags" : [ "Acceso" ],
+        "summary" : "Registrar una cuenta CLIENT",
+        "description" : "Público. Nombres obligatorios, correo único normalizado y contraseña de 12–72 caracteres/máximo 72 bytes UTF-8. Solo se asigna ROLE_CLIENT; no hay cuentas precargadas ni asignación pública de REALTOR.",
+        "operationId" : "register",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RegisterAccountRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Operación completada.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AccountProfileResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Correo ya registrado o actualización concurrente.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ ]
+      }
+    },
+    "/api/v1/auth/logout" : {
+      "post" : {
+        "tags" : [ "Acceso" ],
+        "summary" : "Revocar únicamente el token actual",
+        "description" : "Requiere Bearer, sin cuerpo. Persiste SHA-256 y expiración. Otras sesiones siguen válidas; un reintento con el token revocado recibe 401. No acepta un token alternativo del cuerpo.",
+        "operationId" : "logout",
+        "parameters" : [ ],
+        "responses" : {
+          "204" : {
+            "description" : "Operación completada, sin cuerpo."
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/auth/login" : {
+      "post" : {
+        "tags" : [ "Acceso" ],
+        "summary" : "Ingresar con contraseña y, si corresponde, TOTP",
+        "description" : "Público. Mantiene {token,type,email,roles,expiresIn}; expiresIn está en milisegundos. Con 2FA activo, un OTP ausente, expirado o reutilizado impide emitir JWT. El límite de cinco fallos/15 minutos cubre segundo factor y gestión, no los errores de contraseña primaria del login.",
+        "operationId" : "login",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AuthRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Operación completada.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AuthResponseDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Credenciales inválidas (ErrorResponse) o TWO_FACTOR_REQUIRED/TWO_FACTOR_INVALID (TwoFactorErrorResponse). No se emite JWT.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "anyOf" : [ {
+                    "$ref" : "#/components/schemas/ErrorResponse"
+                  }, {
+                    "$ref" : "#/components/schemas/TwoFactorErrorResponse"
+                  } ]
+                }
+              }
+            }
+          },
+          "503" : {
+            "description" : "TWO_FACTOR_UNAVAILABLE con cuenta 2FA activa; nunca se omite el segundo factor.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TwoFactorErrorResponse"
+                }
+              }
+            }
+          },
+          "429" : {
+            "description" : "TWO_FACTOR_LOCKED: cinco fallos bloquean 15 minutos; contador persistente.",
+            "headers" : {
+              "Retry-After" : {
+                "description" : "Segundos restantes, legibles mediante CORS.",
+                "schema" : {
+                  "maximum" : 900,
+                  "minimum" : 1,
+                  "type" : "integer",
+                  "format" : "int32"
+                }
+              }
+            },
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TwoFactorErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ ]
+      }
+    },
+    "/api/v1/ai/recommendations" : {
+      "post" : {
+        "tags" : [ "Asistente IA (US15)" ],
+        "summary" : "Recomendar inmuebles según capacidad de pago y preferencias",
+        "description" : "Motor determinista en BigDecimal (DECIMAL128, HALF_EVEN): cuota admisible 35% SBS, TEA de referencia 9.50%, solo inmuebles en la moneda solicitada; downPaymentAvailable y preferredDistrict opcionales.",
+        "operationId" : "getRecommendations",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AiRecommendationRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Operación completada.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AiRecommendationResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "403" : {
+            "description" : "Rol o permiso por recurso insuficiente."
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/notifications/{notificationId}/read" : {
+      "patch" : {
+        "tags" : [ "Avisos" ],
+        "summary" : "Marcar un aviso propio como leído",
+        "description" : "Sin cuerpo. Idempotente y conserva el primer readAt; ajeno o inexistente devuelve 404.",
+        "operationId" : "markRead",
+        "parameters" : [ {
+          "name" : "notificationId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Operación completada.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OfferNotificationResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "403" : {
+            "description" : "Rol o permiso por recurso insuficiente."
+          },
+          "404" : {
+            "description" : "Recurso inexistente, eliminado o no disponible para el principal.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/users/me/two-factor" : {
+      "get" : {
+        "tags" : [ "Segundo factor" ],
+        "summary" : "Consultar el estado TOTP propio",
+        "description" : "Solo devuelve enabled y pending; nunca devuelve el secreto activo.",
+        "operationId" : "status",
+        "responses" : {
+          "200" : {
+            "description" : "Operación completada.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Status"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/subscriptions/status" : {
+      "get" : {
+        "tags" : [ "Suscripciones (US06)" ],
+        "summary" : "Consultar estado de suscripción del usuario",
+        "description" : "Solo la propia cuenta. Devuelve planName, status, active, startDate, endDate, statusDescription y paymentCount (pagos COMPLETED).",
+        "operationId" : "getSubscriptionStatus",
+        "responses" : {
+          "200" : {
+            "description" : "Operación completada.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SubscriptionStatusResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "403" : {
+            "description" : "Rol o permiso por recurso insuficiente."
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/simulations/{id}" : {
+      "get" : {
+        "tags" : [ "Cronogramas" ],
+        "summary" : "Recuperar una simulación propia",
+        "description" : "Solo propietario. Ajena o heredada sin owner devuelve 404; no se infiere identidad ni COK histórico.",
+        "operationId" : "getSimulationById",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "description" : "Identificador UUID de la cotización",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Operación completada.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SimulationResponseDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "403" : {
+            "description" : "Rol o permiso por recurso insuficiente."
+          },
+          "404" : {
+            "description" : "Recurso inexistente, eliminado o no disponible para el principal.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/simulations/{id}/export/xlsx" : {
+      "get" : {
+        "tags" : [ "Cronogramas (US12)" ],
+        "summary" : "Descargar cronograma de una simulación propia en .xlsx",
+        "description" : "Solo propietario. Libro OpenXML (ZIP con firma PK\\x03\\x04) con métricas y tabla cuota a cuota.",
+        "operationId" : "exportSimulationExcel",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Archivo adjunto (Content-Disposition: attachment).",
+            "content" : {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "binary"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "403" : {
+            "description" : "Rol o permiso por recurso insuficiente."
+          },
+          "404" : {
+            "description" : "Recurso inexistente, eliminado o no disponible para el principal.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/properties/{id}" : {
+      "get" : {
+        "tags" : [ "Inmuebles" ],
+        "summary" : "Consultar un inmueble activo",
+        "description" : "CLIENT o REALTOR. El catálogo autenticado es compartido; recurso inexistente o eliminado devuelve 404.",
+        "operationId" : "get",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Operación completada.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PropertyResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "403" : {
+            "description" : "Rol o permiso por recurso insuficiente."
+          },
+          "404" : {
+            "description" : "Recurso inexistente, eliminado o no disponible para el principal.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      },
+      "delete" : {
+        "tags" : [ "Inmuebles" ],
+        "summary" : "Eliminar un inmueble propio",
+        "description" : "Solo el propietario, incluso si otro usuario es REALTOR. Borrado lógico; conserva instantáneas históricas. Eliminar de nuevo devuelve 404. No existe edición PUT/PATCH.",
+        "operationId" : "delete",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Operación completada, sin cuerpo."
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "403" : {
+            "description" : "Rol o permiso por recurso insuficiente."
+          },
+          "404" : {
+            "description" : "Recurso inexistente, eliminado o no disponible para el principal.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/properties/{id}/legitimacy" : {
+      "get" : {
+        "tags" : [ "Inmuebles (US09)" ],
+        "summary" : "Consultar certificado registral de legitimidad",
+        "description" : "Catálogo compartido. Devuelve status/legitimacyStatus (VERIFIED_GENUINE, FLAGGED_ANOMALY, PENDING_VERIFICATION), fechas, notas y certificateHash.",
+        "operationId" : "getLegitimacy",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Operación completada.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PropertyLegitimacyResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "403" : {
+            "description" : "Rol o permiso por recurso insuficiente."
+          },
+          "404" : {
+            "description" : "Recurso inexistente, eliminado o no disponible para el principal.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/payments/gateways" : {
+      "get" : {
+        "tags" : [ "Pagos (US05)" ],
+        "summary" : "Listar pasarelas de pago sandbox disponibles",
+        "description" : "CULQI, IZIPAY y STRIPE en modo sandbox con monedas, comisión porcentual, cargo fijo y tarifas oficiales por plan (BASIC 0.00, PREMIUM 49.90, PRO 99.90 PEN). No mueve dinero real.",
+        "operationId" : "listGateways",
+        "responses" : {
+          "200" : {
+            "description" : "Operación completada.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/PaymentGatewayResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "403" : {
+            "description" : "Rol o permiso por recurso insuficiente."
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/offers/{offerId}" : {
+      "get" : {
+        "tags" : [ "Ofertas DEMO" ],
+        "summary" : "Consultar una oferta recibida",
+        "description" : "Solo destinatario; el emisor y terceros reciben 404. La instantánea del inmueble se conserva tras eliminarlo del catálogo.",
+        "operationId" : "get_1",
+        "parameters" : [ {
+          "name" : "offerId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Operación completada.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CreditOfferResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "403" : {
+            "description" : "Rol o permiso por recurso insuficiente."
+          },
+          "404" : {
+            "description" : "Recurso inexistente, eliminado o no disponible para el principal.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/offers/{offerId}/schedule/export/xlsx" : {
+      "get" : {
+        "tags" : [ "Cronogramas (US12)" ],
+        "summary" : "Descargar cronograma de una oferta recibida en .xlsx",
+        "description" : "Solo destinatario y con cronograma ya generado; terceros reciben 404.",
+        "operationId" : "exportScheduleExcel",
+        "parameters" : [ {
+          "name" : "offerId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Archivo adjunto (Content-Disposition: attachment).",
+            "content" : {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "binary"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "403" : {
+            "description" : "Rol o permiso por recurso insuficiente."
+          },
+          "404" : {
+            "description" : "Recurso inexistente, eliminado o no disponible para el principal.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/notifications" : {
+      "get" : {
+        "tags" : [ "Avisos" ],
+        "summary" : "Consultar avisos propios y contador sin leer",
+        "description" : "Solo destinatario. unreadOnly=false por defecto; unreadCount cuenta todos los propios pendientes, independiente de página/filtro. page 0,size 20/rango 1–100, createdAt DESC,id DESC. La UI consulta cada 5 segundos mientras esté visible y autenticada; no hay SSE.",
+        "operationId" : "list_1",
+        "parameters" : [ {
+          "name" : "unreadOnly",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : false
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "minimum" : 0,
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "maximum" : 100,
+            "minimum" : 1,
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Operación completada.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NotificationPageResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "403" : {
+            "description" : "Rol o permiso por recurso insuficiente."
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/messages/conversations/{conversationId}/messages" : {
+      "get" : {
+        "tags" : [ "Mensajería (US16)" ],
+        "summary" : "Leer los mensajes de una conversación",
+        "description" : "Orden cronológico. Inexistente: 404; el principal no participa: 403.",
+        "operationId" : "listMessages",
+        "parameters" : [ {
+          "name" : "conversationId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Operación completada.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ChatMessageResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "403" : {
+            "description" : "Rol o permiso por recurso insuficiente."
+          },
+          "404" : {
+            "description" : "Recurso inexistente, eliminado o no disponible para el principal.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/messages/conversations/{conversationId}/export" : {
+      "get" : {
+        "tags" : [ "Mensajería (US18)" ],
+        "summary" : "Descargar historial de conversación en archivo .txt",
+        "description" : "Solo participantes (403 ajena, 404 inexistente). Transcripción completa en text/plain;charset=UTF-8.",
+        "operationId" : "exportConversationText",
+        "parameters" : [ {
+          "name" : "conversationId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Archivo adjunto (Content-Disposition: attachment).",
+            "content" : {
+              "text/plain;charset=UTF-8" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "binary"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "403" : {
+            "description" : "Rol o permiso por recurso insuficiente."
+          },
+          "404" : {
+            "description" : "Recurso inexistente, eliminado o no disponible para el principal.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/messages/conversations/{conversationId}/export/json" : {
+      "get" : {
+        "tags" : [ "Mensajería (US18)" ],
+        "summary" : "Obtener historial de conversación estructurado en JSON",
+        "description" : "Solo participantes. Mensajes cronológicos y texto formateado.",
+        "operationId" : "exportConversationJson",
+        "parameters" : [ {
+          "name" : "conversationId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Operación completada.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ConversationExportResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "403" : {
+            "description" : "Rol o permiso por recurso insuficiente."
+          },
+          "404" : {
+            "description" : "Recurso inexistente, eliminado o no disponible para el principal.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/messages/blocks" : {
+      "get" : {
+        "tags" : [ "Mensajería (US17)" ],
+        "summary" : "Listar usuarios bloqueados por la cuenta actual",
+        "description" : "Cada elemento expone blockId y blockedId.",
+        "operationId" : "getBlockedUsers",
+        "responses" : {
+          "200" : {
+            "description" : "Operación completada.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/UserBlockResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "403" : {
+            "description" : "Rol o permiso por recurso insuficiente."
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/banking/benchmarks" : {
+      "get" : {
+        "tags" : [ "Referencias DEMO" ],
+        "summary" : "Consultar referencias de tasas simuladas",
+        "description" : "Público. Datos simulados en caché; no consulta oficial SBS ni garantía de latencia. El DTO heredado utiliza números JSON, no cadenas.",
+        "operationId" : "getMarketBenchmarks",
+        "parameters" : [ {
+          "name" : "currency",
+          "in" : "query",
+          "description" : "Moneda del crédito (PEN / USD)",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : "PEN",
+            "enum" : [ "PEN", "USD" ]
+          },
+          "example" : "PEN"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Operación completada.",
+            "headers" : {
+              "X-Response-Time-Ms" : {
+                "description" : "Duración observada de esa llamada; no un SLA.",
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/BankRateResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ ]
+      }
+    },
+    "/api/v1/banking/banks/{bankCode}/offer" : {
+      "get" : {
+        "tags" : [ "Referencias DEMO" ],
+        "summary" : "Consultar una cotización bancaria simulada",
+        "description" : "CLIENT o REALTOR; adaptadores BCP/INTERBANK simulados, sin aprobación bancaria. No crea una oferta persistida ni aviso. El DTO heredado conserva tasas e importes como números JSON.",
+        "operationId" : "getBankSpecificOffer",
+        "parameters" : [ {
+          "name" : "bankCode",
+          "in" : "path",
+          "description" : "Código de banco (BCP o INTERBANK)",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          },
+          "example" : "BCP"
+        }, {
+          "name" : "currency",
+          "in" : "query",
+          "description" : "Moneda",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : "PEN",
+            "enum" : [ "PEN", "USD" ]
+          },
+          "example" : "PEN"
+        }, {
+          "name" : "propertyValue",
+          "in" : "query",
+          "description" : "Valor comercial del inmueble",
+          "required" : false,
+          "schema" : {
+            "type" : "number",
+            "default" : 250000.0
+          },
+          "example" : 250000.0
+        }, {
+          "name" : "loanAmount",
+          "in" : "query",
+          "description" : "Monto del crédito",
+          "required" : false,
+          "schema" : {
+            "type" : "number",
+            "default" : 200000.0
+          },
+          "example" : 200000.0
+        }, {
+          "name" : "termMonths",
+          "in" : "query",
+          "description" : "Plazo en meses",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 240
+          },
+          "example" : 240
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Operación completada.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BankRateResponseDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Datos o parámetros inválidos; validationErrors puede identificar campos.",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "JWT ausente, inválido, expirado o revocado. El filtro de seguridad no garantiza cuerpo JSON."
+          },
+          "403" : {
+            "description" : "Rol o permiso por recurso insuficiente."
+          },
+          "500" : {
+            "description" : "Error interno; no se garantiza un formato de cuerpo si ocurre antes del controlador."
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "UpdateProfileRequest" : {
+        "required" : [ "email", "firstName", "lastName" ],
+        "type" : "object",
+        "properties" : {
+          "firstName" : {
+            "maxLength" : 100,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "lastName" : {
+            "maxLength" : 100,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "email" : {
+            "maxLength" : 254,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        }
+      },
+      "AccountProfileResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "firstName" : {
+            "type" : "string"
+          },
+          "lastName" : {
+            "type" : "string"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "roles" : {
+            "uniqueItems" : true,
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "TwoFactorSetupRequest" : {
+        "required" : [ "password" ],
+        "type" : "object",
+        "properties" : {
+          "password" : {
+            "maxLength" : 256,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        }
+      },
+      "Setup" : {
+        "type" : "object",
+        "properties" : {
+          "secret" : {
+            "type" : "string"
+          },
+          "otpauthUri" : {
+            "type" : "string"
+          },
+          "expiresIn" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "TwoFactorDisableRequest" : {
+        "required" : [ "otp", "password" ],
+        "type" : "object",
+        "properties" : {
+          "password" : {
+            "maxLength" : 256,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "otp" : {
+            "pattern" : "[0-9]{6}",
+            "type" : "string"
+          }
+        }
+      },
+      "Status" : {
+        "type" : "object",
+        "properties" : {
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "pending" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "TwoFactorCodeRequest" : {
+        "required" : [ "otp" ],
+        "type" : "object",
+        "properties" : {
+          "otp" : {
+            "pattern" : "[0-9]{6}",
+            "type" : "string"
+          }
+        }
+      },
+      "ClientProfileDto" : {
+        "required" : [ "documentNumber", "fullName" ],
+        "type" : "object",
+        "properties" : {
+          "documentNumber" : {
+            "type" : "string",
+            "description" : "Número de documento (DNI/CE)",
+            "example" : "72849102"
+          },
+          "fullName" : {
+            "type" : "string",
+            "description" : "Nombres y apellidos completos",
+            "example" : "Carlos Alberto Mendoza Ramos"
+          },
+          "email" : {
+            "type" : "string",
+            "description" : "Correo electrónico del cliente",
+            "example" : "carlos.mendoza@gmail.com"
+          },
+          "monthlyIncome" : {
+            "type" : "number",
+            "description" : "Ingreso neto mensual en la moneda del préstamo",
+            "example" : 8500.0
+          },
+          "creditScore" : {
+            "type" : "integer",
+            "description" : "Score crediticio en centrales de riesgo (1 - 1000)",
+            "format" : "int32",
+            "example" : 780
+          }
+        },
+        "description" : "Datos del perfil del solicitante del crédito"
+      },
+      "SimulationRequestDto" : {
+        "required" : [ "annualInterestRate", "currency", "loanAmount" ],
+        "type" : "object",
+        "properties" : {
+          "propertyValue" : {
+            "description" : "Valor comercial del inmueble Número JSON o cadena decimal. Los límites se validan también en representación textual.",
+            "example" : 250000.0,
+            "oneOf" : [ {
+              "type" : "number"
+            }, {
+              "type" : "string",
+              "description" : "Cadena interpretable como BigDecimal; se aplican los mismos límites semánticos y de precisión."
+            } ]
+          },
+          "loanAmount" : {
+            "description" : "Monto del préstamo hipotecario solicitado Número JSON o cadena decimal. Los límites se validan también en representación textual.",
+            "example" : 200000.0,
+            "oneOf" : [ {
+              "type" : "number"
+            }, {
+              "type" : "string",
+              "description" : "Cadena interpretable como BigDecimal; se aplican los mismos límites semánticos y de precisión."
+            } ]
+          },
+          "currency" : {
+            "type" : "string",
+            "description" : "Moneda del préstamo (PEN / USD)",
+            "example" : "PEN",
+            "enum" : [ "PEN", "USD" ]
+          },
+          "termYears" : {
+            "maximum" : 30,
+            "minimum" : 1,
+            "type" : "integer",
+            "description" : "Plazo del crédito en años (opcional si se especifica termMonths)",
+            "format" : "int32",
+            "example" : 20
+          },
+          "termMonths" : {
+            "maximum" : 360,
+            "minimum" : 1,
+            "type" : "integer",
+            "description" : "Plazo del crédito en meses (1 a 360 meses)",
+            "format" : "int32",
+            "example" : 240
+          },
+          "annualInterestRate" : {
+            "description" : "Tasa Efectiva Anual (TEA) decimal: 0.085 para 8.5%; no se aceptan porcentajes Número JSON o cadena decimal. Los límites se validan también en representación textual.",
+            "example" : 0.085,
+            "oneOf" : [ {
+              "maximum" : 1,
+              "exclusiveMaximum" : false,
+              "type" : "number"
+            }, {
+              "type" : "string",
+              "description" : "Cadena interpretable como BigDecimal; se aplican los mismos límites semánticos y de precisión."
+            } ]
+          },
+          "gracePeriodType" : {
+            "type" : "string",
+            "description" : "Tipo de período de gracia (NONE, PARTIAL, TOTAL)",
+            "example" : "NONE",
+            "enum" : [ "NONE", "PARTIAL", "TOTAL" ]
+          },
+          "gracePeriodMonths" : {
+            "maximum" : 36,
+            "minimum" : 0,
+            "type" : "integer",
+            "description" : "Número de meses de gracia (0 a 36)",
+            "format" : "int32",
+            "example" : 0
+          },
+          "balloonPaymentAmount" : {
+            "description" : "Monto de cuota extraordinaria / balón programada al vencimiento Número JSON o cadena decimal. Los límites se validan también en representación textual.",
+            "example" : 0.0,
+            "oneOf" : [ {
+              "type" : "number"
+            }, {
+              "type" : "string",
+              "description" : "Cadena interpretable como BigDecimal; se aplican los mismos límites semánticos y de precisión."
+            } ]
+          },
+          "balloonPaymentMonth" : {
+            "maximum" : 360,
+            "minimum" : 0,
+            "type" : "integer",
+            "description" : "Mes de pago de la cuota balón",
+            "format" : "int32",
+            "example" : 0
+          },
+          "lifeInsuranceRate" : {
+            "description" : "Tasa mensual de seguro de desgravamen en decimal (por defecto 0) Número JSON o cadena decimal. Los límites se validan también en representación textual.",
+            "example" : 5.0E-4,
+            "oneOf" : [ {
+              "maximum" : 1,
+              "exclusiveMaximum" : false,
+              "minimum" : 0,
+              "exclusiveMinimum" : false,
+              "type" : "number"
+            }, {
+              "type" : "string",
+              "description" : "Cadena interpretable como BigDecimal; se aplican los mismos límites semánticos y de precisión."
+            } ]
+          },
+          "propertyInsuranceRate" : {
+            "description" : "Tasa mensual de seguro de inmueble multirriesgo en decimal (por defecto 0) Número JSON o cadena decimal. Los límites se validan también en representación textual.",
+            "example" : 2.5E-4,
+            "oneOf" : [ {
+              "maximum" : 1,
+              "exclusiveMaximum" : false,
+              "minimum" : 0,
+              "exclusiveMinimum" : false,
+              "type" : "number"
+            }, {
+              "type" : "string",
+              "description" : "Cadena interpretable como BigDecimal; se aplican los mismos límites semánticos y de precisión."
+            } ]
+          },
+          "monthlyAdminFee" : {
+            "description" : "Gastos de administración y portes mensuales fijos Número JSON o cadena decimal. Los límites se validan también en representación textual.",
+            "example" : 10.0,
+            "oneOf" : [ {
+              "type" : "number"
+            }, {
+              "type" : "string",
+              "description" : "Cadena interpretable como BigDecimal; se aplican los mismos límites semánticos y de precisión."
+            } ]
+          },
+          "discountRateAnnual" : {
+            "description" : "Tasa de descuento anual (COK) para cálculo del VAN. Si no se indica se usa la TEA Número JSON o cadena decimal. Los límites se validan también en representación textual.",
+            "example" : 0.085,
+            "oneOf" : [ {
+              "maximum" : 1,
+              "exclusiveMaximum" : false,
+              "minimum" : 0,
+              "exclusiveMinimum" : false,
+              "type" : "number"
+            }, {
+              "type" : "string",
+              "description" : "Cadena interpretable como BigDecimal; se aplican los mismos límites semánticos y de precisión."
+            } ]
+          },
+          "startDate" : {
+            "type" : "string",
+            "description" : "Fecha de desembolso o inicio del crédito (YYYY-MM-DD)",
+            "format" : "date",
+            "example" : "2026-11-01"
+          },
+          "propertyAddress" : {
+            "maxLength" : 250,
+            "minLength" : 0,
+            "type" : "string",
+            "description" : "Dirección referencial del inmueble",
+            "example" : "Av. Javier Prado Este 2450, San Borja, Lima"
+          },
+          "clientProfile" : {
+            "$ref" : "#/components/schemas/ClientProfileDto"
+          }
+        },
+        "description" : "Solicitud de simulación de crédito hipotecario con método francés"
+      },
+      "FinancialMetricsDto" : {
+        "type" : "object",
+        "properties" : {
+          "tea" : {
+            "pattern" : "^-?[0-9]+(\\.[0-9]+)?$",
+            "type" : "string",
+            "description" : "Tasa Efectiva Anual pactada (TEA) Cadena decimal exacta en JSON, sin exponente.",
+            "example" : "0.085"
+          },
+          "tem" : {
+            "pattern" : "^-?[0-9]+(\\.[0-9]+)?$",
+            "type" : "string",
+            "description" : "Tasa Efectiva Mensual equivalente (TEM = (1+TEA)^(30/360) - 1) Cadena decimal exacta en JSON, sin exponente.",
+            "example" : "0.006818"
+          },
+          "monthlyTir" : {
+            "pattern" : "^-?[0-9]+(\\.[0-9]+)?$",
+            "type" : "string",
+            "description" : "Tasa Interna de Retorno periódica mensual de los flujos del deudor (TIR) Cadena decimal exacta en JSON, sin exponente.",
+            "example" : "0.007624"
+          },
+          "tcea" : {
+            "pattern" : "^-?[0-9]+(\\.[0-9]+)?$",
+            "type" : "string",
+            "description" : "Tasa de Costo Efectivo Anual real que incluye seguros y cargos (TCEA = (1+TIR)^12 - 1) Cadena decimal exacta en JSON, sin exponente.",
+            "example" : "0.09542"
+          },
+          "van" : {
+            "pattern" : "^-?[0-9]+(\\.[0-9]+)?$",
+            "type" : "string",
+            "description" : "Valor Actual Neto de los desembolsos y pagos del cliente descontados al COK Cadena decimal exacta en JSON, sin exponente.",
+            "example" : "-14250.3"
+          },
+          "totalInterest" : {
+            "pattern" : "^-?[0-9]+(\\.[0-9]+)?$",
+            "type" : "string",
+            "description" : "Total acumulado de intereses a pagar durante el crédito Cadena decimal exacta en JSON, sin exponente.",
+            "example" : "210880.0"
+          },
+          "totalPrincipal" : {
+            "pattern" : "^-?[0-9]+(\\.[0-9]+)?$",
+            "type" : "string",
+            "description" : "Capital amortizado; incluye intereses capitalizados cuando existe gracia total Cadena decimal exacta en JSON, sin exponente.",
+            "example" : "200000.0"
+          },
+          "totalLifeInsurance" : {
+            "pattern" : "^-?[0-9]+(\\.[0-9]+)?$",
+            "type" : "string",
+            "description" : "Total acumulado de seguro de desgravamen Cadena decimal exacta en JSON, sin exponente.",
+            "example" : "14200.0"
+          },
+          "totalPropertyInsurance" : {
+            "pattern" : "^-?[0-9]+(\\.[0-9]+)?$",
+            "type" : "string",
+            "description" : "Total acumulado de seguro de inmueble multirriesgo Cadena decimal exacta en JSON, sin exponente.",
+            "example" : "15000.0"
+          },
+          "totalAdminFee" : {
+            "pattern" : "^-?[0-9]+(\\.[0-9]+)?$",
+            "type" : "string",
+            "description" : "Total acumulado de portes y gastos administrativos Cadena decimal exacta en JSON, sin exponente.",
+            "example" : "2400.0"
+          },
+          "totalCost" : {
+            "pattern" : "^-?[0-9]+(\\.[0-9]+)?$",
+            "type" : "string",
+            "description" : "Costo financiero total desembolsado por el cliente a lo largo del crédito Cadena decimal exacta en JSON, sin exponente.",
+            "example" : "442480.0"
+          },
+          "discountRateUsed" : {
+            "pattern" : "^-?[0-9]+(\\.[0-9]+)?$",
+            "type" : "string",
+            "description" : "Tasa de descuento anual utilizada para el cálculo del VAN Cadena decimal exacta en JSON, sin exponente.",
+            "example" : "0.085"
+          }
+        },
+        "description" : "Métricas financieras calculadas desde la perspectiva del deudor"
+      },
+      "InstallmentDto" : {
+        "type" : "object",
+        "properties" : {
+          "installmentNumber" : {
+            "type" : "integer",
+            "description" : "Número correlativo de cuota (1 a N)",
+            "format" : "int32",
+            "example" : 1
+          },
+          "dueDate" : {
+            "type" : "string",
+            "description" : "Fecha de vencimiento de la cuota",
+            "format" : "date",
+            "example" : "2026-12-01"
+          },
+          "initialBalance" : {
+            "pattern" : "^-?[0-9]+(\\.[0-9]+)?$",
+            "type" : "string",
+            "description" : "Saldo inicial antes de amortizar en este período Cadena decimal exacta en JSON, sin exponente.",
+            "example" : "200000.0"
+          },
+          "interest" : {
+            "pattern" : "^-?[0-9]+(\\.[0-9]+)?$",
+            "type" : "string",
+            "description" : "Interés generado en el período (Saldo * TEM) Cadena decimal exacta en JSON, sin exponente.",
+            "example" : "1363.68"
+          },
+          "principalAmortization" : {
+            "pattern" : "^-?[0-9]+(\\.[0-9]+)?$",
+            "type" : "string",
+            "description" : "Amortización de capital del período Cadena decimal exacta en JSON, sin exponente.",
+            "example" : "348.32"
+          },
+          "installmentAmount" : {
+            "pattern" : "^-?[0-9]+(\\.[0-9]+)?$",
+            "type" : "string",
+            "description" : "Cuota pura (Amortización + Interés) Cadena decimal exacta en JSON, sin exponente.",
+            "example" : "1712.0"
+          },
+          "lifeInsurance" : {
+            "pattern" : "^-?[0-9]+(\\.[0-9]+)?$",
+            "type" : "string",
+            "description" : "Seguro de desgravamen del período Cadena decimal exacta en JSON, sin exponente.",
+            "example" : "100.0"
+          },
+          "propertyInsurance" : {
+            "pattern" : "^-?[0-9]+(\\.[0-9]+)?$",
+            "type" : "string",
+            "description" : "Seguro de inmueble multirriesgo del período Cadena decimal exacta en JSON, sin exponente.",
+            "example" : "62.5"
+          },
+          "adminFee" : {
+            "pattern" : "^-?[0-9]+(\\.[0-9]+)?$",
+            "type" : "string",
+            "description" : "Gastos administrativos y portes Cadena decimal exacta en JSON, sin exponente.",
+            "example" : "10.0"
+          },
+          "totalPayment" : {
+            "pattern" : "^-?[0-9]+(\\.[0-9]+)?$",
+            "type" : "string",
+            "description" : "Cuota total a pagar por el cliente (Cuota pura + Seguros + Gastos) Cadena decimal exacta en JSON, sin exponente.",
+            "example" : "1884.5"
+          },
+          "finalBalance" : {
+            "pattern" : "^-?[0-9]+(\\.[0-9]+)?$",
+            "type" : "string",
+            "description" : "Saldo final restante al término del período. La última cuota liquida a 0.00 exacto Cadena decimal exacta en JSON, sin exponente.",
+            "example" : "199651.68"
+          },
+          "graceType" : {
+            "type" : "string",
+            "description" : "Tipo de gracia activa en la cuota (NONE, PARTIAL, TOTAL)",
+            "example" : "NONE",
+            "enum" : [ "NONE", "PARTIAL", "TOTAL" ]
+          }
+        },
+        "description" : "Detalle del cronograma de pagos para una cuota específica"
+      },
+      "SimulationResponseDto" : {
+        "type" : "object",
+        "properties" : {
+          "quotationId" : {
+            "type" : "string",
+            "description" : "Identificador único de la cotización generada",
+            "format" : "uuid",
+            "example" : "a5e8c1b4-2e9f-4318-8f81-58d348a5293e"
+          },
+          "currency" : {
+            "type" : "string",
+            "description" : "Moneda del préstamo",
+            "example" : "PEN",
+            "enum" : [ "PEN", "USD" ]
+          },
+          "loanAmount" : {
+            "pattern" : "^-?[0-9]+(\\.[0-9]+)?$",
+            "type" : "string",
+            "description" : "Monto del crédito simulado Cadena decimal exacta en JSON, sin exponente.",
+            "example" : "200000.0"
+          },
+          "propertyValue" : {
+            "pattern" : "^-?[0-9]+(\\.[0-9]+)?$",
+            "type" : "string",
+            "description" : "Valor del inmueble Cadena decimal exacta en JSON, sin exponente.",
+            "example" : "250000.0"
+          },
+          "termMonths" : {
+            "type" : "integer",
+            "description" : "Plazo total en meses",
+            "format" : "int32",
+            "example" : 240
+          },
+          "estimatedMonthlyInstallment" : {
+            "pattern" : "^-?[0-9]+(\\.[0-9]+)?$",
+            "type" : "string",
+            "description" : "Resumen de cuota mensual ordinaria estimada Cadena decimal exacta en JSON, sin exponente.",
+            "example" : "1884.5"
+          },
+          "metrics" : {
+            "$ref" : "#/components/schemas/FinancialMetricsDto"
+          },
+          "status" : {
+            "type" : "string",
+            "description" : "Estado de la cotización",
+            "example" : "ISSUED",
+            "enum" : [ "DRAFT", "ISSUED", "ACCEPTED", "EXPIRED" ]
+          },
+          "schedule" : {
+            "type" : "array",
+            "description" : "Cronograma completo detallado cuota a cuota",
+            "items" : {
+              "$ref" : "#/components/schemas/InstallmentDto"
+            }
+          },
+          "createdAt" : {
+            "type" : "string",
+            "description" : "Fecha y hora de emisión",
+            "format" : "date-time"
+          }
+        },
+        "description" : "Resultado completo de la simulación de crédito hipotecario"
+      },
+      "CreatePropertyRequest" : {
+        "required" : [ "address", "currency", "price", "title" ],
+        "type" : "object",
+        "properties" : {
+          "title" : {
+            "maxLength" : 120,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "address" : {
+            "maxLength" : 250,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "description" : {
+            "maxLength" : 2000,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "price" : {
+            "description" : "Número JSON o cadena decimal. Los límites se validan también en representación textual.",
+            "oneOf" : [ {
+              "minimum" : 0.01,
+              "exclusiveMinimum" : false,
+              "type" : "number"
+            }, {
+              "type" : "string",
+              "description" : "Cadena interpretable como BigDecimal; se aplican los mismos límites semánticos y de precisión."
+            } ],
+            "example" : null
+          },
+          "currency" : {
+            "type" : "string",
+            "enum" : [ "PEN", "USD" ]
+          },
+          "tags" : {
+            "maxItems" : 20,
+            "minItems" : 0,
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "PropertyResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "ownerId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "address" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "price" : {
+            "pattern" : "^-?[0-9]+(\\.[0-9]+)?$",
+            "type" : "string",
+            "description" : "Cadena decimal exacta en JSON, sin exponente.",
+            "example" : "0.00"
+          },
+          "currency" : {
+            "type" : "string",
+            "enum" : [ "PEN", "USD" ]
+          },
+          "tags" : {
+            "uniqueItems" : true,
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "legitimacyStatus" : {
+            "type" : "string",
+            "enum" : [ "VERIFIED_GENUINE", "PENDING_VERIFICATION", "FLAGGED_ANOMALY" ]
+          },
+          "legitimacyVerifiedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "legitimacyNotes" : {
+            "type" : "string"
+          },
+          "certificateHash" : {
+            "type" : "string"
+          }
+        }
+      },
+      "VerifyRegistryRequest" : {
+        "required" : [ "registryNumber" ],
+        "type" : "object",
+        "properties" : {
+          "registryNumber" : {
+            "maxLength" : 50,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "claimedOwner" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        }
+      },
+      "PropertyLegitimacyResponse" : {
+        "type" : "object",
+        "properties" : {
+          "propertyId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "registryNumber" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "VERIFIED_GENUINE", "PENDING_VERIFICATION", "FLAGGED_ANOMALY" ]
+          },
+          "legitimacyStatus" : {
+            "type" : "string",
+            "enum" : [ "VERIFIED_GENUINE", "PENDING_VERIFICATION", "FLAGGED_ANOMALY" ]
+          },
+          "genuine" : {
+            "type" : "boolean"
+          },
+          "registryOffice" : {
+            "type" : "string"
+          },
+          "legalOwnerName" : {
+            "type" : "string"
+          },
+          "verifiedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "legitimacyVerifiedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "verificationNotes" : {
+            "type" : "string"
+          },
+          "legitimacyNotes" : {
+            "type" : "string"
+          },
+          "certificateHash" : {
+            "type" : "string"
+          }
+        }
+      },
+      "VerifyPaymentRequest" : {
+        "required" : [ "amount", "currency", "paymentMethod", "planName", "transactionReference" ],
+        "type" : "object",
+        "properties" : {
+          "transactionReference" : {
+            "maxLength" : 100,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "paymentMethod" : {
+            "maxLength" : 50,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "amount" : {
+            "minimum" : 0.01,
+            "exclusiveMinimum" : false,
+            "type" : "number"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "planName" : {
+            "type" : "string"
+          }
+        }
+      },
+      "PaymentVerificationResponse" : {
+        "type" : "object",
+        "properties" : {
+          "paymentId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "subscriptionId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "transactionReference" : {
+            "type" : "string"
+          },
+          "amount" : {
+            "type" : "number"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "paymentMethod" : {
+            "type" : "string"
+          },
+          "planName" : {
+            "type" : "string"
+          },
+          "paymentStatus" : {
+            "type" : "string",
+            "enum" : [ "COMPLETED", "PENDING", "FAILED" ]
+          },
+          "subscriptionStatus" : {
+            "type" : "string",
+            "enum" : [ "ACTIVE", "PENDING", "EXPIRED", "CANCELLED" ]
+          },
+          "endDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "processedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "message" : {
+            "type" : "string"
+          }
+        }
+      },
+      "CheckoutRequest" : {
+        "required" : [ "cardToken", "gatewayCode", "planName" ],
+        "type" : "object",
+        "properties" : {
+          "gatewayCode" : {
+            "pattern" : "(?i)CULQI|IZIPAY|STRIPE",
+            "type" : "string"
+          },
+          "planName" : {
+            "type" : "string"
+          },
+          "cardToken" : {
+            "maxLength" : 64,
+            "minLength" : 0,
+            "pattern" : "[A-Za-z0-9_\\-]{6,64}",
+            "type" : "string"
+          },
+          "currency" : {
+            "type" : "string"
+          }
+        }
+      },
+      "CheckoutResponse" : {
+        "type" : "object",
+        "properties" : {
+          "gatewayCode" : {
+            "type" : "string"
+          },
+          "planName" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "APPROVED", "REJECTED" ]
+          },
+          "transactionReference" : {
+            "type" : "string"
+          },
+          "authorizationCode" : {
+            "type" : "string"
+          },
+          "declineCode" : {
+            "type" : "string"
+          },
+          "amount" : {
+            "type" : "number"
+          },
+          "commission" : {
+            "type" : "number"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "retryAllowed" : {
+            "type" : "boolean"
+          },
+          "message" : {
+            "type" : "string"
+          }
+        }
+      },
+      "CreateCreditOfferRequest" : {
+        "required" : [ "annualInterestRate", "bankCode", "currency", "loanAmount", "propertyId", "recipientEmail", "startDate", "termMonths" ],
+        "type" : "object",
+        "properties" : {
+          "recipientEmail" : {
+            "maxLength" : 254,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "propertyId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "bankCode" : {
+            "type" : "string",
+            "enum" : [ "BCP", "INTERBANK" ]
+          },
+          "loanAmount" : {
+            "description" : "Número JSON o cadena decimal. Los límites se validan también en representación textual.",
+            "oneOf" : [ {
+              "minimum" : 0.01,
+              "exclusiveMinimum" : false,
+              "type" : "number"
+            }, {
+              "type" : "string",
+              "description" : "Cadena interpretable como BigDecimal; se aplican los mismos límites semánticos y de precisión."
+            } ],
+            "example" : null
+          },
+          "currency" : {
+            "type" : "string",
+            "enum" : [ "PEN", "USD" ]
+          },
+          "annualInterestRate" : {
+            "description" : "Número JSON o cadena decimal. Los límites se validan también en representación textual.",
+            "oneOf" : [ {
+              "maximum" : 1,
+              "exclusiveMaximum" : false,
+              "minimum" : 0,
+              "exclusiveMinimum" : true,
+              "type" : "number"
+            }, {
+              "type" : "string",
+              "description" : "Cadena interpretable como BigDecimal; se aplican los mismos límites semánticos y de precisión."
+            } ],
+            "example" : null
+          },
+          "termMonths" : {
+            "maximum" : 360,
+            "minimum" : 1,
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "startDate" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }
+      },
+      "CreditOfferResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "recipientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "issuerId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "bankCode" : {
+            "type" : "string",
+            "enum" : [ "BCP", "INTERBANK" ]
+          },
+          "bankName" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "origin" : {
+            "type" : "string",
+            "enum" : [ "DEMO" ]
+          },
+          "property" : {
+            "$ref" : "#/components/schemas/OfferPropertySnapshotResponse"
+          },
+          "loanAmount" : {
+            "pattern" : "^-?[0-9]+(\\.[0-9]+)?$",
+            "type" : "string",
+            "description" : "Cadena decimal exacta en JSON, sin exponente.",
+            "example" : "0.00"
+          },
+          "currency" : {
+            "type" : "string",
+            "enum" : [ "PEN", "USD" ]
+          },
+          "annualInterestRate" : {
+            "pattern" : "^-?[0-9]+(\\.[0-9]+)?$",
+            "type" : "string",
+            "description" : "Cadena decimal exacta en JSON, sin exponente.",
+            "example" : "0.00"
+          },
+          "termMonths" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "startDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "simulationId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "OfferPropertySnapshotResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "address" : {
+            "type" : "string"
+          },
+          "price" : {
+            "pattern" : "^-?[0-9]+(\\.[0-9]+)?$",
+            "type" : "string",
+            "description" : "Cadena decimal exacta en JSON, sin exponente.",
+            "example" : "0.00"
+          },
+          "currency" : {
+            "type" : "string",
+            "enum" : [ "PEN", "USD" ]
+          }
+        }
+      },
+      "SendMessageRequest" : {
+        "required" : [ "content", "conversationId" ],
+        "type" : "object",
+        "properties" : {
+          "conversationId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "recipientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "content" : {
+            "maxLength" : 2000,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        }
+      },
+      "ChatMessageResponse" : {
+        "type" : "object",
+        "properties" : {
+          "messageId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "conversationId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "senderId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "recipientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "senderName" : {
+            "type" : "string"
+          },
+          "content" : {
+            "type" : "string"
+          },
+          "sentAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "CreateConversationRequest" : {
+        "required" : [ "recipientId" ],
+        "type" : "object",
+        "properties" : {
+          "recipientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "propertyId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }
+      },
+      "ConversationResponse" : {
+        "type" : "object",
+        "properties" : {
+          "conversationId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "propertyId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "participantAId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "participantBId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "counterpartId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "counterpartName" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "messageCount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "lastMessageAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "lastMessagePreview" : {
+            "type" : "string"
+          }
+        }
+      },
+      "BlockUserRequest" : {
+        "type" : "object",
+        "properties" : {
+          "reason" : {
+            "maxLength" : 250,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        }
+      },
+      "UserBlockResponse" : {
+        "type" : "object",
+        "properties" : {
+          "blockId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "blockerId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "blockedId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "reason" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "message" : {
+            "type" : "string"
+          }
+        }
+      },
+      "RegisterAccountRequest" : {
+        "required" : [ "email", "firstName", "lastName", "password" ],
+        "type" : "object",
+        "properties" : {
+          "firstName" : {
+            "maxLength" : 100,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "lastName" : {
+            "maxLength" : 100,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "email" : {
+            "maxLength" : 254,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "password" : {
+            "maxLength" : 72,
+            "minLength" : 12,
+            "type" : "string"
+          },
+          "passwordWithinByteLimit" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "AuthRequestDto" : {
+        "required" : [ "email", "password" ],
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string",
+            "description" : "Correo electrónico institucional o de usuario",
+            "example" : "asesor@credicasa.pe"
+          },
+          "password" : {
+            "type" : "string",
+            "description" : "Contraseña en texto plano",
+            "example" : "Asesor123!"
+          },
+          "otp" : {
+            "maxLength" : 64,
+            "minLength" : 0,
+            "type" : "string",
+            "description" : "Código TOTP de seis dígitos cuando la cuenta tiene 2FA activo"
+          }
+        },
+        "description" : "Credenciales de autenticación para generación de JWT"
+      },
+      "AuthResponseDto" : {
+        "type" : "object",
+        "properties" : {
+          "token" : {
+            "type" : "string",
+            "description" : "Token JWT firmado",
+            "example" : "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          },
+          "type" : {
+            "type" : "string",
+            "description" : "Tipo de esquema de autorización",
+            "example" : "Bearer"
+          },
+          "email" : {
+            "type" : "string",
+            "description" : "Correo del usuario autenticado",
+            "example" : "asesor@credicasa.pe"
+          },
+          "roles" : {
+            "type" : "array",
+            "description" : "Roles RBAC asignados",
+            "example" : [ "ROLE_REALTOR" ],
+            "items" : {
+              "type" : "string",
+              "description" : "Roles RBAC asignados",
+              "example" : "[\"ROLE_REALTOR\"]"
+            }
+          },
+          "expiresIn" : {
+            "type" : "integer",
+            "description" : "Tiempo de expiración en milisegundos",
+            "format" : "int64",
+            "example" : 86400000
+          }
+        },
+        "description" : "Respuesta de autenticación con JSON Web Token (JWT)"
+      },
+      "AiRecommendationRequest" : {
+        "required" : [ "monthlyIncome" ],
+        "type" : "object",
+        "properties" : {
+          "monthlyIncome" : {
+            "minimum" : 500.0,
+            "exclusiveMinimum" : false,
+            "type" : "number"
+          },
+          "downPaymentAvailable" : {
+            "minimum" : 0.0,
+            "exclusiveMinimum" : false,
+            "type" : "number"
+          },
+          "currency" : {
+            "type" : "string",
+            "enum" : [ "PEN", "USD" ]
+          },
+          "preferredDistrict" : {
+            "maxLength" : 60,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "desiredTermYears" : {
+            "maximum" : 30,
+            "minimum" : 1,
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "preferenceTags" : {
+            "maxItems" : 20,
+            "minItems" : 0,
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "AiRecommendationResponse" : {
+        "type" : "object",
+        "properties" : {
+          "monthlyIncome" : {
+            "type" : "number"
+          },
+          "currency" : {
+            "type" : "string",
+            "enum" : [ "PEN", "USD" ]
+          },
+          "maxAllowableInstallment" : {
+            "type" : "number"
+          },
+          "evaluationSummary" : {
+            "type" : "string"
+          },
+          "totalAnalyzed" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "recommendations" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PropertyRecommendationItemResponse"
+            }
+          }
+        }
+      },
+      "PropertyRecommendationItemResponse" : {
+        "type" : "object",
+        "properties" : {
+          "propertyId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "address" : {
+            "type" : "string"
+          },
+          "price" : {
+            "type" : "number"
+          },
+          "currency" : {
+            "type" : "string",
+            "enum" : [ "PEN", "USD" ]
+          },
+          "relevanceScore" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "financiallyViable" : {
+            "type" : "boolean"
+          },
+          "estimatedMonthlyInstallment" : {
+            "type" : "number"
+          },
+          "debtToIncomeRatioPercent" : {
+            "type" : "number"
+          },
+          "recommendationReason" : {
+            "type" : "string"
+          }
+        }
+      },
+      "OfferNotificationResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "offerId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "type" : {
+            "type" : "string"
+          },
+          "origin" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "readAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "SubscriptionStatusResponse" : {
+        "type" : "object",
+        "properties" : {
+          "subscriptionId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "accountId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "planName" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "ACTIVE", "PENDING", "EXPIRED", "CANCELLED" ]
+          },
+          "active" : {
+            "type" : "boolean"
+          },
+          "startDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "endDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "autoRenew" : {
+            "type" : "boolean"
+          },
+          "statusDescription" : {
+            "type" : "string"
+          },
+          "paymentCount" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "PropertyPageResponse" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PropertyResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "PaymentGatewayResponse" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "displayName" : {
+            "type" : "string"
+          },
+          "currencies" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "commissionPercent" : {
+            "type" : "number"
+          },
+          "fixedFee" : {
+            "type" : "number"
+          },
+          "sandbox" : {
+            "type" : "boolean"
+          },
+          "planFees" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "CreditOfferPageResponse" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CreditOfferResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "NotificationPageResponse" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/OfferNotificationResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "unreadCount" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "ConversationExportResponse" : {
+        "type" : "object",
+        "properties" : {
+          "conversationId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "totalMessages" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "exportedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "messages" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ChatMessageResponse"
+            }
+          },
+          "formattedTranscript" : {
+            "type" : "string"
+          }
+        }
+      },
+      "BankRateResponseDto" : {
+        "type" : "object",
+        "properties" : {
+          "bankCode" : {
+            "type" : "string",
+            "description" : "Código identificador de la entidad financiera",
+            "example" : "BCP"
+          },
+          "bankName" : {
+            "type" : "string",
+            "description" : "Nombre comercial de la entidad",
+            "example" : "Banco de Crédito del Perú"
+          },
+          "minTea" : {
+            "type" : "number",
+            "description" : "Tasa mínima referencial TEA",
+            "example" : 0.079
+          },
+          "maxTea" : {
+            "type" : "number",
+            "description" : "Tasa máxima referencial TEA",
+            "example" : 0.105
+          },
+          "averageTea" : {
+            "type" : "number",
+            "description" : "Tasa promedio ponderada del mercado",
+            "example" : 0.0885
+          },
+          "currency" : {
+            "type" : "string",
+            "description" : "Moneda de la tasa",
+            "example" : "PEN",
+            "enum" : [ "PEN", "USD" ]
+          },
+          "productName" : {
+            "type" : "string",
+            "description" : "Nombre del producto hipotecario",
+            "example" : "Crédito Hipotecario Tradicional"
+          },
+          "maxTermMonths" : {
+            "type" : "integer",
+            "description" : "Plazo máximo financiable en meses",
+            "format" : "int32",
+            "example" : 300
+          },
+          "maxLtv" : {
+            "type" : "number",
+            "description" : "Porcentaje máximo de financiamiento sobre el inmueble (LTV)",
+            "example" : 0.9
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "description" : "Fecha generada para el dato simulado, no una publicación SBS verificada.",
+            "format" : "date-time"
+          }
+        },
+        "description" : "Referencia bancaria simulada. Este DTO heredado conserva tasas como números JSON."
+      },
+      "ErrorResponse" : {
+        "type" : "object",
+        "properties" : {
+          "type" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "detail" : {
+            "type" : "string"
+          },
+          "instance" : {
+            "type" : "string"
+          },
+          "error" : {
+            "type" : "string"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "validationErrors" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          }
+        },
+        "description" : "RFC 7807 Problem Details con extensiones de compatibilidad."
+      },
+      "TwoFactorErrorResponse" : {
+        "required" : [ "code", "error", "message", "status", "timestamp" ],
+        "type" : "object",
+        "properties" : {
+          "type" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "detail" : {
+            "type" : "string"
+          },
+          "instance" : {
+            "type" : "string"
+          },
+          "error" : {
+            "type" : "string"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "validationErrors" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          },
+          "code" : {
+            "type" : "string",
+            "enum" : [ "TWO_FACTOR_REQUIRED", "TWO_FACTOR_INVALID", "INVALID_CREDENTIALS", "TWO_FACTOR_LOCKED", "TWO_FACTOR_ALREADY_ENABLED", "TWO_FACTOR_NOT_ENABLED", "TWO_FACTOR_SETUP_EXPIRED", "TWO_FACTOR_UNAVAILABLE" ]
+          }
+        },
+        "description" : "RFC 7807 Problem Details del segundo factor, con código estable."
+      }
+    },
+    "securitySchemes" : {
+      "BearerAuth" : {
+        "type" : "http",
+        "description" : "Token de POST /api/v1/auth/login. Solo se emite después del TOTP válido cuando está activo. El segundo factor usa códigos de 30 segundos; no se reutiliza el código de confirmación.",
+        "scheme" : "bearer",
+        "bearerFormat" : "JWT"
+      }
+    }
+  }
+}

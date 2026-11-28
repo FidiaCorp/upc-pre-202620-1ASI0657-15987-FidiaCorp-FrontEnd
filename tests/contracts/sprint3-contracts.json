@@ -1,0 +1,429 @@
+{
+  "subscriptionStatusInitial" : {
+    "status" : 200,
+    "response" : {
+      "subscriptionId" : null,
+      "accountId" : "d1dba9ef-b064-445f-a213-74819ec9829a",
+      "planName" : "FREE_TIER",
+      "status" : "PENDING",
+      "active" : false,
+      "startDate" : null,
+      "endDate" : null,
+      "autoRenew" : false,
+      "statusDescription" : "Sin suscripción activa. Elige una pasarela y un plan para acceder a funcionalidades Premium o Pro.",
+      "paymentCount" : 0
+    }
+  },
+  "paymentGateways" : {
+    "status" : 200,
+    "response" : [ {
+      "code" : "CULQI",
+      "displayName" : "Culqi (sandbox)",
+      "currencies" : [ "PEN", "USD" ],
+      "commissionPercent" : "3.44",
+      "fixedFee" : "0.00",
+      "sandbox" : true,
+      "planFees" : {
+        "BASIC" : "0.00",
+        "PREMIUM" : "49.90",
+        "PRO" : "99.90"
+      }
+    }, {
+      "code" : "IZIPAY",
+      "displayName" : "Izipay (sandbox)",
+      "currencies" : [ "PEN" ],
+      "commissionPercent" : "3.99",
+      "fixedFee" : "0.00",
+      "sandbox" : true,
+      "planFees" : {
+        "BASIC" : "0.00",
+        "PREMIUM" : "49.90",
+        "PRO" : "99.90"
+      }
+    }, {
+      "code" : "STRIPE",
+      "displayName" : "Stripe (test mode)",
+      "currencies" : [ "PEN", "USD" ],
+      "commissionPercent" : "3.60",
+      "fixedFee" : "1.00",
+      "sandbox" : true,
+      "planFees" : {
+        "BASIC" : "0.00",
+        "PREMIUM" : "49.90",
+        "PRO" : "99.90"
+      }
+    } ]
+  },
+  "checkoutRejected" : {
+    "status" : 402,
+    "request" : {
+      "cardToken" : "tok_DECLINED_INSUFFICIENT_FUNDS",
+      "gatewayCode" : "IZIPAY",
+      "planName" : "PREMIUM",
+      "currency" : "PEN"
+    },
+    "response" : {
+      "gatewayCode" : "IZIPAY",
+      "planName" : "PREMIUM",
+      "status" : "REJECTED",
+      "transactionReference" : null,
+      "authorizationCode" : null,
+      "declineCode" : "INSUFFICIENT_FUNDS",
+      "amount" : "49.90",
+      "commission" : "1.99",
+      "currency" : "PEN",
+      "retryAllowed" : true,
+      "message" : "Fondos insuficientes. Intenta con otra tarjeta o pasarela."
+    }
+  },
+  "checkoutApproved" : {
+    "status" : 200,
+    "request" : {
+      "cardToken" : "tok_visa_approved",
+      "gatewayCode" : "CULQI",
+      "planName" : "PREMIUM",
+      "currency" : "PEN"
+    },
+    "response" : {
+      "gatewayCode" : "CULQI",
+      "planName" : "PREMIUM",
+      "status" : "APPROVED",
+      "transactionReference" : "CULQI-5af9144f1295ff9c5a3bf2d9afad9ba8-22f495f0241eff0dee8a7f18204817852755e4df",
+      "authorizationCode" : "AUTH-5AF9144F",
+      "declineCode" : null,
+      "amount" : "49.90",
+      "commission" : "1.72",
+      "currency" : "PEN",
+      "retryAllowed" : false,
+      "message" : "Cobro aprobado en modo sandbox por Culqi (sandbox)."
+    }
+  },
+  "paymentVerified" : {
+    "status" : 200,
+    "request" : {
+      "planName" : "PREMIUM",
+      "currency" : "PEN",
+      "paymentMethod" : "CULQI",
+      "transactionReference" : "CULQI-5af9144f1295ff9c5a3bf2d9afad9ba8-22f495f0241eff0dee8a7f18204817852755e4df",
+      "amount" : "49.90"
+    },
+    "response" : {
+      "paymentId" : "c2cf2899-e850-4854-aef6-e1606d424278",
+      "subscriptionId" : "037a9ff0-f83e-4d68-9073-e1ef9f97aca1",
+      "transactionReference" : "CULQI-5af9144f1295ff9c5a3bf2d9afad9ba8-22f495f0241eff0dee8a7f18204817852755e4df",
+      "amount" : "49.90",
+      "currency" : "PEN",
+      "paymentMethod" : "CULQI",
+      "planName" : "PREMIUM",
+      "paymentStatus" : "COMPLETED",
+      "subscriptionStatus" : "ACTIVE",
+      "endDate" : "2026-12-24",
+      "processedAt" : "2026-11-24T18:31:03.786134507",
+      "message" : "Pago verificado satisfactoriamente. Suscripción PREMIUM activada hasta 2026-12-24."
+    }
+  },
+  "paymentRejected422" : {
+    "status" : 422,
+    "request" : {
+      "planName" : "PRO",
+      "currency" : "PEN",
+      "paymentMethod" : "CULQI",
+      "transactionReference" : "TX-INVENTADO",
+      "amount" : "0.01"
+    },
+    "response" : {
+      "type" : "https://api.credicasa.pe/problems/unprocessable-entity",
+      "title" : "Unprocessable Entity",
+      "status" : 422,
+      "detail" : "El monto no coincide con la tarifa oficial del plan PRO (99.90 PEN).",
+      "instance" : "/api/v1/payments/verify",
+      "error" : "Unprocessable Entity",
+      "message" : "El monto no coincide con la tarifa oficial del plan PRO (99.90 PEN).",
+      "timestamp" : "2026-11-24T18:31:03.821758068"
+    }
+  },
+  "subscriptionStatusActive" : {
+    "status" : 200,
+    "response" : {
+      "subscriptionId" : "037a9ff0-f83e-4d68-9073-e1ef9f97aca1",
+      "accountId" : "d1dba9ef-b064-445f-a213-74819ec9829a",
+      "planName" : "PREMIUM",
+      "status" : "ACTIVE",
+      "active" : true,
+      "startDate" : "2026-11-24",
+      "endDate" : "2026-12-24",
+      "autoRenew" : true,
+      "statusDescription" : "Suscripción PREMIUM activa hasta el 2026-12-24.",
+      "paymentCount" : 1
+    }
+  },
+  "propertyCreated" : {
+    "status" : 201,
+    "request" : {
+      "description" : "Contrato",
+      "title" : "Departamento Miraflores",
+      "currency" : "PEN",
+      "price" : "280000.00",
+      "tags" : [ "terraza" ],
+      "address" : "Av. Larco 1234, Miraflores"
+    },
+    "response" : {
+      "id" : "d39557e7-9372-4d17-a6ae-c3920ce606f1",
+      "ownerId" : "8d610772-1861-4621-a7ab-1b746485e885",
+      "title" : "Departamento Miraflores",
+      "address" : "Av. Larco 1234, Miraflores",
+      "description" : "Contrato",
+      "price" : "280000.00",
+      "currency" : "PEN",
+      "tags" : [ "terraza" ],
+      "createdAt" : "2026-11-24T23:31:03.932241006Z",
+      "legitimacyStatus" : "PENDING_VERIFICATION",
+      "legitimacyVerifiedAt" : null,
+      "legitimacyNotes" : "Inmueble pendiente de validación registral.",
+      "certificateHash" : null
+    }
+  },
+  "registryVerified" : {
+    "status" : 200,
+    "request" : {
+      "claimedOwner" : "Contrato Owner",
+      "registryNumber" : "14298172"
+    },
+    "response" : {
+      "propertyId" : "d39557e7-9372-4d17-a6ae-c3920ce606f1",
+      "registryNumber" : "14298172",
+      "status" : "VERIFIED_GENUINE",
+      "legitimacyStatus" : "VERIFIED_GENUINE",
+      "genuine" : true,
+      "registryOffice" : "Zona Registral N° IX - Sede Lima",
+      "legalOwnerName" : "Contrato Owner",
+      "verifiedAt" : "2026-11-24T23:31:04Z",
+      "legitimacyVerifiedAt" : "2026-11-24T23:31:04Z",
+      "verificationNotes" : "Partida electrónica verificada en el Registro de Predios (consulta DEMO). Inmueble libre de gravámenes no informados.",
+      "legitimacyNotes" : "Partida electrónica verificada en el Registro de Predios (consulta DEMO). Inmueble libre de gravámenes no informados.",
+      "certificateHash" : "5ecfb7b467725c5309663be23cb59a98fc697219eb38e88e31973c2dda1c69a0"
+    }
+  },
+  "registryForbidden" : {
+    "status" : 403,
+    "request" : {
+      "registryNumber" : "14298172"
+    },
+    "response" : {
+      "type" : "https://api.credicasa.pe/problems/forbidden",
+      "title" : "Forbidden",
+      "status" : 403,
+      "detail" : "No cuenta con los privilegios suficientes para ejecutar esta operación.",
+      "instance" : "/api/v1/properties/d39557e7-9372-4d17-a6ae-c3920ce606f1/verify-registry",
+      "error" : "Forbidden",
+      "message" : "No cuenta con los privilegios suficientes para ejecutar esta operación.",
+      "timestamp" : "2026-11-24T18:31:04.040502878"
+    }
+  },
+  "legitimacy" : {
+    "status" : 200,
+    "response" : {
+      "propertyId" : "d39557e7-9372-4d17-a6ae-c3920ce606f1",
+      "registryNumber" : "14298172",
+      "status" : "VERIFIED_GENUINE",
+      "legitimacyStatus" : "VERIFIED_GENUINE",
+      "genuine" : true,
+      "registryOffice" : "Zona Registral N° IX - Sede Lima",
+      "legalOwnerName" : "Contrato Owner",
+      "verifiedAt" : "2026-11-24T23:31:04Z",
+      "legitimacyVerifiedAt" : "2026-11-24T23:31:04Z",
+      "verificationNotes" : "Partida electrónica verificada en el Registro de Predios (consulta DEMO). Inmueble libre de gravámenes no informados.",
+      "legitimacyNotes" : "Partida electrónica verificada en el Registro de Predios (consulta DEMO). Inmueble libre de gravámenes no informados.",
+      "certificateHash" : "5ecfb7b467725c5309663be23cb59a98fc697219eb38e88e31973c2dda1c69a0"
+    }
+  },
+  "propertyPage" : {
+    "status" : 200,
+    "response" : {
+      "items" : [ {
+        "id" : "d39557e7-9372-4d17-a6ae-c3920ce606f1",
+        "ownerId" : "8d610772-1861-4621-a7ab-1b746485e885",
+        "title" : "Departamento Miraflores",
+        "address" : "Av. Larco 1234, Miraflores",
+        "description" : "Contrato",
+        "price" : "280000.00",
+        "currency" : "PEN",
+        "tags" : [ "terraza" ],
+        "createdAt" : "2026-11-24T23:31:03.932241Z",
+        "legitimacyStatus" : "VERIFIED_GENUINE",
+        "legitimacyVerifiedAt" : "2026-11-24T23:31:04Z",
+        "legitimacyNotes" : "Partida electrónica verificada en el Registro de Predios (consulta DEMO). Inmueble libre de gravámenes no informados.",
+        "certificateHash" : "5ecfb7b467725c5309663be23cb59a98fc697219eb38e88e31973c2dda1c69a0"
+      } ],
+      "page" : 0,
+      "size" : 20,
+      "totalElements" : 1,
+      "totalPages" : 1
+    }
+  },
+  "aiRecommendations" : {
+    "status" : 200,
+    "request" : {
+      "preferredDistrict" : "Miraflores",
+      "downPaymentAvailable" : "50000.00",
+      "desiredTermYears" : 20,
+      "currency" : "PEN",
+      "monthlyIncome" : "6000.00",
+      "preferenceTags" : [ "terraza" ]
+    },
+    "response" : {
+      "monthlyIncome" : "6000.00",
+      "currency" : "PEN",
+      "maxAllowableInstallment" : "2100.00",
+      "evaluationSummary" : "Análisis completado para ingreso de PEN 6000.00. Cuota mensual máxima sugerida (35% SBS): 2100.00. Se identificaron 1 inmuebles viables de 1 analizados en PEN.",
+      "totalAnalyzed" : 1,
+      "recommendations" : [ {
+        "propertyId" : "d39557e7-9372-4d17-a6ae-c3920ce606f1",
+        "title" : "Departamento Miraflores",
+        "address" : "Av. Larco 1234, Miraflores",
+        "price" : "280000.00",
+        "currency" : "PEN",
+        "relevanceScore" : 70,
+        "financiallyViable" : true,
+        "estimatedMonthlyInstallment" : "2085.65",
+        "debtToIncomeRatioPercent" : "34.76",
+        "recommendationReason" : "Viabilidad financiera adecuada: cuota estimada dentro del límite máximo SBS del 35% (34.76%). Coincidencia exacta de ubicación con tu distrito preferido (miraflores). Presenta 1 atributo(s) destacados de tu interés."
+      } ]
+    }
+  },
+  "conversationCreated" : {
+    "status" : 201,
+    "request" : {
+      "recipientId" : "8d610772-1861-4621-a7ab-1b746485e885",
+      "propertyId" : "d39557e7-9372-4d17-a6ae-c3920ce606f1"
+    },
+    "response" : {
+      "conversationId" : "d8ab99ed-6630-486b-ad78-b42bfc99be80",
+      "propertyId" : "d39557e7-9372-4d17-a6ae-c3920ce606f1",
+      "participantAId" : "d1dba9ef-b064-445f-a213-74819ec9829a",
+      "participantBId" : "8d610772-1861-4621-a7ab-1b746485e885",
+      "counterpartId" : "8d610772-1861-4621-a7ab-1b746485e885",
+      "counterpartName" : "Contrato owner",
+      "createdAt" : "2026-11-24T23:31:04.199932178Z",
+      "messageCount" : 0,
+      "lastMessageAt" : null,
+      "lastMessagePreview" : null
+    }
+  },
+  "messageSent" : {
+    "status" : 200,
+    "request" : {
+      "conversationId" : "d8ab99ed-6630-486b-ad78-b42bfc99be80",
+      "content" : "¿Sigue disponible?"
+    },
+    "response" : {
+      "messageId" : "b1d384d6-1dcc-4232-aa84-66cf54643444",
+      "conversationId" : "d8ab99ed-6630-486b-ad78-b42bfc99be80",
+      "senderId" : "d1dba9ef-b064-445f-a213-74819ec9829a",
+      "recipientId" : "8d610772-1861-4621-a7ab-1b746485e885",
+      "senderName" : "Contrato client",
+      "content" : "¿Sigue disponible?",
+      "sentAt" : "2026-11-24T18:31:04.22778764"
+    }
+  },
+  "conversations" : {
+    "status" : 200,
+    "response" : [ {
+      "conversationId" : "d8ab99ed-6630-486b-ad78-b42bfc99be80",
+      "propertyId" : "d39557e7-9372-4d17-a6ae-c3920ce606f1",
+      "participantAId" : "d1dba9ef-b064-445f-a213-74819ec9829a",
+      "participantBId" : "8d610772-1861-4621-a7ab-1b746485e885",
+      "counterpartId" : "d1dba9ef-b064-445f-a213-74819ec9829a",
+      "counterpartName" : "Contrato client",
+      "createdAt" : "2026-11-24T23:31:04.199932Z",
+      "messageCount" : 1,
+      "lastMessageAt" : "2026-11-24T18:31:04.227788",
+      "lastMessagePreview" : "¿Sigue disponible?"
+    } ]
+  },
+  "messages" : {
+    "status" : 200,
+    "response" : [ {
+      "messageId" : "b1d384d6-1dcc-4232-aa84-66cf54643444",
+      "conversationId" : "d8ab99ed-6630-486b-ad78-b42bfc99be80",
+      "senderId" : "d1dba9ef-b064-445f-a213-74819ec9829a",
+      "recipientId" : "8d610772-1861-4621-a7ab-1b746485e885",
+      "senderName" : "Contrato client",
+      "content" : "¿Sigue disponible?",
+      "sentAt" : "2026-11-24T18:31:04.227788"
+    } ]
+  },
+  "conversationExportJson" : {
+    "status" : 200,
+    "response" : {
+      "conversationId" : "d8ab99ed-6630-486b-ad78-b42bfc99be80",
+      "totalMessages" : 1,
+      "exportedAt" : "2026-11-24T18:31:04.261254437",
+      "messages" : [ {
+        "messageId" : "b1d384d6-1dcc-4232-aa84-66cf54643444",
+        "conversationId" : "d8ab99ed-6630-486b-ad78-b42bfc99be80",
+        "senderId" : "d1dba9ef-b064-445f-a213-74819ec9829a",
+        "recipientId" : "8d610772-1861-4621-a7ab-1b746485e885",
+        "senderName" : "Contrato client",
+        "content" : "¿Sigue disponible?",
+        "sentAt" : "2026-11-24T18:31:04.227788"
+      } ],
+      "formattedTranscript" : "=================================================================\nCREDICASA - HISTORIAL OFICIAL DE CONVERSACION DE MENSAJERIA\nID de Conversacion: d8ab99ed-6630-486b-ad78-b42bfc99be80\nFecha de Exportacion: 2026-11-24T18:31:04.261254437\nTotal de Mensajes: 1\n=================================================================\n\n[2026-11-24T18:31:04.227788] Contrato client (ID: d1dba9ef-b064-445f-a213-74819ec9829a):\n  ¿Sigue disponible?\n\n--- Fin de la Transcripcion ---\n"
+    }
+  },
+  "conversationForbidden" : {
+    "status" : 403,
+    "response" : {
+      "type" : "https://api.credicasa.pe/problems/forbidden",
+      "title" : "Forbidden",
+      "status" : 403,
+      "detail" : "No cuenta con los privilegios suficientes para ejecutar esta operación.",
+      "instance" : "/api/v1/messages/conversations/d8ab99ed-6630-486b-ad78-b42bfc99be80/messages",
+      "error" : "Forbidden",
+      "message" : "No cuenta con los privilegios suficientes para ejecutar esta operación.",
+      "timestamp" : "2026-11-24T18:31:04.458569604"
+    }
+  },
+  "blockCreated" : {
+    "status" : 200,
+    "request" : {
+      "reason" : "Spam repetitivo"
+    },
+    "response" : {
+      "blockId" : "10c4de8e-8b90-444e-b327-0121f9325a28",
+      "blockerId" : "d1dba9ef-b064-445f-a213-74819ec9829a",
+      "blockedId" : "8d610772-1861-4621-a7ab-1b746485e885",
+      "reason" : "Spam repetitivo",
+      "createdAt" : "2026-11-24T23:31:04.47355951",
+      "message" : "Usuario bloqueado exitosamente. Ya no podrá enviarte mensajes ni visualizar tu actividad directa."
+    }
+  },
+  "blocks" : {
+    "status" : 200,
+    "response" : [ {
+      "blockId" : "10c4de8e-8b90-444e-b327-0121f9325a28",
+      "blockerId" : "d1dba9ef-b064-445f-a213-74819ec9829a",
+      "blockedId" : "8d610772-1861-4621-a7ab-1b746485e885",
+      "reason" : "Spam repetitivo",
+      "createdAt" : "2026-11-24T23:31:04.47356",
+      "message" : "Bloqueo activo."
+    } ]
+  },
+  "messageBlocked409" : {
+    "status" : 409,
+    "request" : {
+      "conversationId" : "d8ab99ed-6630-486b-ad78-b42bfc99be80",
+      "content" : "hola"
+    },
+    "response" : {
+      "type" : "https://api.credicasa.pe/problems/conflict",
+      "title" : "Conflict",
+      "status" : 409,
+      "detail" : "La comunicación está restringida: existe un bloqueo activo entre los usuarios.",
+      "instance" : "/api/v1/messages",
+      "error" : "Conflict",
+      "message" : "La comunicación está restringida: existe un bloqueo activo entre los usuarios.",
+      "timestamp" : "2026-11-24T18:31:04.501581587"
+    }
+  }
+}

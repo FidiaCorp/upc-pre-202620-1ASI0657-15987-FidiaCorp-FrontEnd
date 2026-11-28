@@ -8,6 +8,8 @@ import OffersView from '../views/OffersView.vue'
 import OfferDetailView from '../views/OfferDetailView.vue'
 import NotificationsView from '../views/NotificationsView.vue'
 import SimulationView from '../views/SimulationView.vue'
+import ScenarioComparatorView from '../views/ScenarioComparatorView.vue'
+import OfferVersionsView from '../views/OfferVersionsView.vue'
 import { isAuthenticated } from '../account/session.js'
 import { safeRedirect } from '../account/validation.js'
 import { navigation } from './navigation'
@@ -20,6 +22,8 @@ const router = createRouter({
     { path: '/register', name: 'register', component: AuthView, meta: { title: 'Crear cuenta', guestOnly: true } },
     { path: '/products', redirect: '/offers' },
     { path: '/messaging', redirect: '/notifications' },
+    { path: '/simulations/compare', name: 'simulation-compare', component: ScenarioComparatorView, meta: { title: 'Comparar escenarios', requiresAuth: true } },
+    { path: '/offers/:id/versions', name: 'offer-versions', component: OfferVersionsView, meta: { title: 'Versiones de la oferta', requiresAuth: true } },
     { path: '/offers/:id', name: 'offer-detail', component: OfferDetailView, meta: { title: 'Detalle de oferta', requiresAuth: true } },
     ...navigation.map(({ path, name, title }) => ({
       path,
@@ -39,7 +43,7 @@ router.beforeEach((to) => {
 })
 
 router.afterEach((to) => {
-  document.title = `${to.meta.title} | FidiaCorp`
+  document.title = `${to.meta.title} | CrediCasa`
 })
 
 export default router

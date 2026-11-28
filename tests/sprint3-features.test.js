@@ -1,336 +1,232 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { clearSession, startSession } from '../src/account/session.js'
-import { getSubscriptionStatus, verifyPayment } from '../src/subscriptions/api.js'
-import { getPropertyLegitimacy, verifyPropertyRegistry } from '../src/properties/api.js'
+import { checkoutPayment, getSubscriptionStatus, listPaymentGateways, subscriptionSummary, verifyPayment } from '../src/subscriptions/api.js'
+import { getPropertyLegitimacy, legitimacyBadge, verifyPropertyRegistry } from '../src/properties/api.js'
 import { downloadOfferScheduleXlsx, downloadSimulationXlsx } from '../src/simulations/api.js'
-import { getAiPropertyRecommendations } from '../src/simulations/ai-api.js'
+import { advisorView, getAiPropertyRecommendations } from '../src/simulations/ai-api.js'
 import {
-  blockUser,
-  exportConversationJson,
-  exportConversationText,
-  listBlockedUsers,
-  sendMessage,
-  unblockUser,
+  blockUser, exportConversationJson, exportConversationText, isUuid, listBlockedUsers, listConversations, listMessages,
+  sendMessage, startConversation, threadView, unblockUser,
 } from '../src/messaging/api.js'
 
-test('US06: subscription status returns active plan and payment verification confirms subscription', async () => {
-  const previousFetch = globalThis.fetch
-  try {
-    startSession({ token: 'sub-token-123', expiresIn: 3600 })
+/*
+ * Contratos REALES: tests/contracts/sprint3-contracts.json se captura desde el backend Spring Boot
+ * (FrontendContractFixturesTest) y openapi-v1.3.0.json es el documento /v3/api-docs generado por springdoc.
+ * Los cuerpos que envía el frontend se validan contra los esquemas de request del OpenAPI y las respuestas
+ * simuladas en fetch son exactamente las capturadas.
+ */
+const contracts = JSON.parse(readFileSync(new URL('./contracts/sprint3-contracts.json', import.meta.url), 'utf8'))
+const openapi = JSON.parse(readFileSync(new URL('./contracts/openapi-v1.3.0.json', import.meta.url), 'utf8'))
 
-    globalThis.fetch = async (url, options) => {
-      if (url.includes('/subscriptions/status')) {
-        assert.equal(options.headers.Authorization, 'Bearer sub-token-123')
-        return new Response(
-          JSON.stringify({
-            id: 'sub-001',
-            userId: 'user-001',
-            plan: 'PREMIUM',
-            status: 'ACTIVE',
-            expiresAt: '2026-12-31T23:59:59Z',
-            active: true,
-            paymentCount: 1,
-          }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
-      }
-      if (url.includes('/payments/verify')) {
-        const body = JSON.parse(options.body)
-        assert.equal(body.subscriptionPlan, 'PREMIUM')
-        assert.equal(body.amount, '49.90')
-        assert.equal(body.currency, 'PEN')
-        assert.equal(body.externalPaymentId, 'OPER-987654')
-        return new Response(
-          JSON.stringify({
-            paymentId: 'pay-001',
-            status: 'CONFIRMED',
-            subscriptionId: 'sub-001',
-            plan: 'PREMIUM',
-            subscriptionStatus: 'ACTIVE',
-            expiresAt: '2026-12-31T23:59:59Z',
-            confirmedAt: '2026-11-15T12:00:00Z',
-            message: 'Pago confirmado exitosamente.',
-          }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
-      }
-      throw new Error(`Unexpected URL: ${url}`)
-    }
+function requestSchema(path, method) {
+  const op = openapi.paths[`/api/v1${path}`]?.[method]
+  assert.ok(op, `Operación ${method.toUpperCase()} ${path} ausente en el OpenAPI real`)
+  const ref = op.requestBody?.content?.['application/json']?.schema?.$ref
+  return ref ? openapi.components.schemas[ref.split('/').at(-1)] : null
+}
 
-    const status = await getSubscriptionStatus()
-    assert.equal(status.active, true)
-    assert.equal(status.plan, 'PREMIUM')
+/** Las claves enviadas deben existir en el DTO del backend y cubrir todos sus campos obligatorios. */
+function assertMatchesRequestSchema(body, path, method = 'post') {
+  const schema = requestSchema(path, method)
+  assert.ok(schema, `Sin esquema de request para ${path}`)
+  const allowed = Object.keys(schema.properties)
+  for (const key of Object.keys(body)) assert.ok(allowed.includes(key), `${path}: el campo "${key}" no existe en el DTO real (${allowed.join(', ')})`)
+  for (const key of schema.required || []) assert.ok(body[key] !== undefined && body[key] !== null, `${path}: falta el campo obligatorio "${key}"`)
+}
 
-    const paymentRes = await verifyPayment({
-      subscriptionPlan: 'PREMIUM',
-      amount: '49.90',
-      currency: 'PEN',
-      externalPaymentId: 'OPER-987654',
-    })
-    assert.equal(paymentRes.status, 'CONFIRMED')
-    assert.equal(paymentRes.subscriptionStatus, 'ACTIVE')
-  } finally {
-    globalThis.fetch = previousFetch
-    clearSession()
+function respond(name) {
+  const entry = contracts[name]
+  assert.ok(entry, `Captura real "${name}" inexistente`)
+  return new Response(JSON.stringify(entry.response), { status: entry.status, headers: { 'Content-Type': 'application/json' } })
+}
+
+async function withApi(handler, run) {
+  const previous = globalThis.fetch
+  startSession({ token: 'contract-token', expiresIn: 3600000 })
+  const calls = []
+  globalThis.fetch = async (url, options = {}) => {
+    const call = { url: String(url), method: options.method || 'GET', body: options.body ? JSON.parse(options.body) : undefined, headers: options.headers }
+    calls.push(call)
+    assert.equal(options.headers.Authorization, 'Bearer contract-token')
+    return handler(call)
+  }
+  try { await run(calls) } finally { globalThis.fetch = previous; clearSession() }
+}
+
+test('el OpenAPI real es la versión 1.3.0 y documenta los endpoints usados por el frontend', () => {
+  assert.equal(openapi.info.version, '1.3.0')
+  for (const [path, method] of [['/payments/gateways', 'get'], ['/payments/checkout', 'post'], ['/payments/verify', 'post'], ['/subscriptions/status', 'get'],
+    ['/properties/{id}/verify-registry', 'post'], ['/properties/{id}/legitimacy', 'get'], ['/ai/recommendations', 'post'], ['/messages', 'post'],
+    ['/messages/conversations', 'post'], ['/messages/conversations', 'get'], ['/messages/conversations/{conversationId}/messages', 'get'],
+    ['/messages/conversations/{conversationId}/export', 'get'], ['/messages/conversations/{conversationId}/export/json', 'get'],
+    ['/messages/blocks', 'get'], ['/messages/blocks/{targetUserId}', 'post'], ['/messages/blocks/{targetUserId}', 'delete'],
+    ['/simulations/{id}/export/xlsx', 'get'], ['/offers/{offerId}/schedule/export/xlsx', 'get']]) {
+    assert.ok(openapi.paths[`/api/v1${path}`]?.[method], `${method} ${path}`)
   }
 })
 
-test('US09: SUNARP registry verification validates property authenticity and legitimacy report', async () => {
-  const previousFetch = globalThis.fetch
-  try {
-    startSession({ token: 'sunarp-token', expiresIn: 3600 })
+test('US05 + US06: pasarelas, rechazo 402 con reintento y verificación con el contrato real', async () => {
+  await withApi(call => {
+    if (call.url.endsWith('/payments/gateways')) return respond('paymentGateways')
+    if (call.url.endsWith('/payments/checkout')) return respond(call.body.cardToken.includes('DECLINED') ? 'checkoutRejected' : 'checkoutApproved')
+    if (call.url.endsWith('/payments/verify')) return respond('paymentVerified')
+    if (call.url.endsWith('/subscriptions/status')) return respond('subscriptionStatusActive')
+    throw new Error(`URL inesperada ${call.url}`)
+  }, async calls => {
+    const gateways = await listPaymentGateways()
+    assert.deepEqual(gateways.map(g => g.code), ['CULQI', 'IZIPAY', 'STRIPE'])
+    assert.equal(gateways[0].planFees.PREMIUM, '49.90')
 
-    globalThis.fetch = async (url, options) => {
-      if (url.includes('/verify-registry') && options.method === 'POST') {
-        const body = JSON.parse(options.body)
-        assert.equal(body.electronicEntry, '14298172')
-        assert.equal(body.registryOffice, 'ZONA IX - SEDE LIMA')
-        assert.equal(body.titleSheetNumber, 'P03192831')
-        return new Response(
-          JSON.stringify({
-            propertyId: 'prop-100',
-            legitimacyStatus: 'VERIFIED',
-            sunarpVerified: true,
-            electronicEntry: '14298172',
-            registryOffice: 'ZONA IX - SEDE LIMA',
-            titleSheetNumber: 'P03192831',
-            verifiedAt: '2026-11-15T12:00:00Z',
-            certificateHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-          }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
-      }
-      if (url.includes('/legitimacy') && options.method === 'GET') {
-        return new Response(
-          JSON.stringify({
-            propertyId: 'prop-100',
-            legitimacyStatus: 'VERIFIED',
-            sunarpVerified: true,
-          }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
-      }
-      throw new Error(`Unexpected URL: ${url}`)
-    }
+    const rejected = await checkoutPayment({ gatewayCode: 'IZIPAY', planName: 'PREMIUM', cardToken: 'tok_DECLINED_INSUFFICIENT_FUNDS' })
+    assert.equal(rejected.status, 'REJECTED')
+    assert.equal(rejected.declineCode, 'INSUFFICIENT_FUNDS')
+    assert.equal(rejected.retryAllowed, true)
+    assertMatchesRequestSchema(calls.at(-1).body, '/payments/checkout')
 
-    const report = await verifyPropertyRegistry('prop-100', {
-      electronicEntry: '14298172',
-      registryOffice: 'ZONA IX - SEDE LIMA',
-      titleSheetNumber: 'P03192831',
-    })
-    assert.equal(report.legitimacyStatus, 'VERIFIED')
-    assert.equal(report.sunarpVerified, true)
-    assert.ok(report.certificateHash)
+    const approved = await checkoutPayment({ gatewayCode: 'CULQI', planName: 'PREMIUM', cardToken: 'tok_visa_approved' })
+    assert.equal(approved.status, 'APPROVED')
+    assert.match(approved.transactionReference, /^CULQI-[0-9a-f]{32}-[0-9a-f]{40}$/)
 
-    const fetchedReport = await getPropertyLegitimacy('prop-100')
-    assert.equal(fetchedReport.legitimacyStatus, 'VERIFIED')
-  } finally {
-    globalThis.fetch = previousFetch
-    clearSession()
-  }
+    const receipt = await verifyPayment({ transactionReference: approved.transactionReference, paymentMethod: approved.gatewayCode,
+      amount: approved.amount, currency: approved.currency, planName: approved.planName })
+    const sent = calls.at(-1).body
+    assert.deepEqual(Object.keys(sent).sort(), ['amount', 'currency', 'paymentMethod', 'planName', 'transactionReference'])
+    assertMatchesRequestSchema(sent, '/payments/verify')
+    assert.equal(receipt.subscriptionStatus, 'ACTIVE')
+    assert.equal(receipt.paymentStatus, 'COMPLETED')
+
+    const summary = subscriptionSummary(await getSubscriptionStatus())
+    assert.deepEqual({ plan: summary.plan, badge: summary.badge, payments: summary.payments }, { plan: 'PREMIUM', badge: 'ACTIVA', payments: 1 })
+    assert.match(summary.validUntil, /^\d{4}-\d{2}-\d{2}$/)
+    assert.ok(summary.description.includes('PREMIUM'))
+  })
+  assert.equal(subscriptionSummary(contracts.subscriptionStatusInitial.response).plan, 'Gratuito (sin suscripción)')
+  assert.equal(subscriptionSummary(contracts.subscriptionStatusInitial.response).payments, 0)
 })
 
-test('US12: simulation and offer schedule xlsx exports request binary sheet download with auth token', async () => {
-  const previousFetch = globalThis.fetch
-  try {
-    startSession({ token: 'xlsx-token', expiresIn: 3600 })
-
-    globalThis.fetch = async (url, options) => {
-      assert.equal(options.headers.Authorization, 'Bearer xlsx-token')
-      if (url.includes('/simulations/sim-456/export/xlsx')) {
-        const fakeZipBuffer = new Uint8Array([0x50, 0x4b, 0x03, 0x04])
-        return new Response(fakeZipBuffer, {
-          status: 200,
-          headers: {
-            'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'Content-Disposition': 'attachment; filename="cronograma_sim-456.xlsx"',
-          },
-        })
-      }
-      if (url.includes('/offers/off-789/schedule/export/xlsx')) {
-        const fakeZipBuffer = new Uint8Array([0x50, 0x4b, 0x03, 0x04])
-        return new Response(fakeZipBuffer, {
-          status: 200,
-          headers: {
-            'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          },
-        })
-      }
-      throw new Error(`Unexpected URL: ${url}`)
-    }
-
-    const simBlob = await downloadSimulationXlsx('sim-456')
-    assert.ok(simBlob instanceof Blob)
-    assert.equal(simBlob.size, 4)
-
-    const offBlob = await downloadOfferScheduleXlsx('off-789')
-    assert.ok(offBlob instanceof Blob)
-    assert.equal(offBlob.size, 4)
-  } finally {
-    globalThis.fetch = previousFetch
-    clearSession()
-  }
+test('US06: el 422 real del backend llega como error con detalle RFC 7807', async () => {
+  await withApi(() => respond('paymentRejected422'), async () => {
+    await assert.rejects(verifyPayment({ transactionReference: 'TX', paymentMethod: 'CULQI', amount: '0.01', planName: 'PRO' }),
+      error => error.status === 422 && error.body.type.endsWith('/unprocessable-entity') && error.message.length > 0)
+  })
 })
 
-test('US15: AI recommendation engine evaluates borrower solvency and returns ranked properties', async () => {
-  const previousFetch = globalThis.fetch
-  try {
-    startSession({ token: 'ai-token', expiresIn: 3600 })
-
-    globalThis.fetch = async (url, options) => {
-      if (url.includes('/ai/recommendations')) {
-        const body = JSON.parse(options.body)
-        assert.equal(body.monthlyIncome, '7500')
-        assert.equal(body.currency, 'PEN')
-        assert.equal(body.downPayment, '50000')
-        assert.equal(body.preferredDistrict, 'Surco')
-        assert.equal(body.maxLoanTermMonths, 240)
-        assert.deepEqual(body.preferredTags, ['terraza', 'estacionamiento'])
-
-        return new Response(
-          JSON.stringify({
-            borrowerEvaluation: {
-              monthlyIncome: 7500.0,
-              currency: 'PEN',
-              maxAffordableMonthlyInstallment: 2625.0,
-              maxLoanCapacity: 262500.0,
-              maxPropertyPrice: 312500.0,
-              debtToIncomeRatioPercent: '35%',
-            },
-            recommendations: [
-              {
-                propertyId: 'prop-surco-1',
-                title: 'Departamento Vista Alegre',
-                address: 'Av. Los Próceres 340',
-                price: 285000.0,
-                currency: 'PEN',
-                district: 'Surco',
-                tags: ['terraza', 'estacionamiento'],
-                estimatedMonthlyInstallment: 2410.0,
-                debtRatioPercent: '32.1%',
-                legitimacyStatus: 'VERIFIED',
-                recommendationScore: 96,
-                recommendationReason: 'Excelente compatibilidad de cuota bajo el límite SBS del 35%.',
-              },
-            ],
-            totalEvaluated: 12,
-            recommendationsCount: 1,
-          }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
-      }
-      throw new Error(`Unexpected URL: ${url}`)
-    }
-
-    const result = await getAiPropertyRecommendations({
-      monthlyIncome: '7500',
-      currency: 'PEN',
-      downPayment: '50000',
-      preferredDistrict: 'Surco',
-      maxLoanTermMonths: 240,
-      preferredTags: ['terraza', 'estacionamiento'],
-    })
-
-    assert.equal(result.borrowerEvaluation.debtToIncomeRatioPercent, '35%')
-    assert.equal(result.recommendationsCount, 1)
-    assert.equal(result.recommendations[0].recommendationScore, 96)
-    assert.equal(result.recommendations[0].district, 'Surco')
-  } finally {
-    globalThis.fetch = previousFetch
-    clearSession()
-  }
+test('US09: verificación SUNARP con { registryNumber, claimedOwner } y badge desde PropertyResponse real', async () => {
+  const propertyId = contracts.propertyCreated.response.id
+  await withApi(call => call.url.endsWith('/verify-registry') ? respond('registryVerified') : respond('legitimacy'), async calls => {
+    const report = await verifyPropertyRegistry(propertyId, { registryNumber: ' 14298172 ', claimedOwner: 'Contrato Owner' })
+    assert.deepEqual(calls[0].body, { registryNumber: '14298172', claimedOwner: 'Contrato Owner' })
+    assertMatchesRequestSchema(calls[0].body, '/properties/{id}/verify-registry')
+    assert.equal(report.status, 'VERIFIED_GENUINE')
+    assert.match(report.certificateHash, /^[0-9a-f]{64}$/)
+    const legitimacy = await getPropertyLegitimacy(propertyId)
+    assert.equal(legitimacy.certificateHash, report.certificateHash)
+  })
+  const card = contracts.propertyPage.response.items.find(item => item.id === propertyId)
+  const badge = legitimacyBadge(card)
+  assert.equal(badge.label, 'Verificado SUNARP')
+  assert.equal(badge.css, 'badge-verified')
+  assert.equal(badge.hash, contracts.registryVerified.response.certificateHash)
+  assert.equal(legitimacyBadge(contracts.propertyCreated.response).label, 'Sin verificación registral')
+  assert.equal(legitimacyBadge({ legitimacyStatus: 'FLAGGED_ANOMALY' }).css, 'badge-rejected')
+  assert.equal(contracts.registryForbidden.status, 403)
 })
 
-test('US17: messaging block controls prevent unwanted interactions and list blocks', async () => {
-  const previousFetch = globalThis.fetch
-  try {
-    startSession({ token: 'msg-token', expiresIn: 3600 })
-
-    globalThis.fetch = async (url, options) => {
-      if (url.includes('/messages/blocks/target-user-1') && options.method === 'POST') {
-        const body = JSON.parse(options.body)
-        assert.equal(body.reason, 'Spam repetitivo')
-        return new Response(
-          JSON.stringify({
-            id: 'block-01',
-            blockerUserId: 'my-user-id',
-            blockedUserId: 'target-user-1',
-            reason: 'Spam repetitivo',
-            blockedAt: '2026-11-15T12:00:00Z',
-          }),
-          { status: 201, headers: { 'Content-Type': 'application/json' } }
-        )
-      }
-      if (url.includes('/messages/blocks/target-user-1') && options.method === 'DELETE') {
-        return new Response(null, { status: 204 })
-      }
-      if (url.includes('/messages/blocks') && options.method === 'GET') {
-        return new Response(
-          JSON.stringify([
-            {
-              id: 'block-01',
-              blockedUserId: 'target-user-1',
-              reason: 'Spam repetitivo',
-            },
-          ]),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
-      }
-      throw new Error(`Unexpected URL: ${url}`)
+test('US12: exportaciones .xlsx descargan el binario con token y rutas reales', async () => {
+  const zip = new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0x14, 0x00])
+  await withApi(call => {
+    assert.match(call.url, /\/(simulations\/sim-1\/export\/xlsx|offers\/off-1\/schedule\/export\/xlsx)$/)
+    return new Response(zip, { status: 200, headers: { 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' } })
+  }, async () => {
+    for (const blob of [await downloadSimulationXlsx('sim-1'), await downloadOfferScheduleXlsx('off-1')]) {
+      assert.deepEqual([...new Uint8Array(await blob.arrayBuffer()).subarray(0, 4)], [0x50, 0x4b, 0x03, 0x04])
     }
-
-    const blockRes = await blockUser('target-user-1', 'Spam repetitivo')
-    assert.equal(blockRes.blockedUserId, 'target-user-1')
-
-    const blocksList = await listBlockedUsers()
-    assert.equal(blocksList.length, 1)
-    assert.equal(blocksList[0].blockedUserId, 'target-user-1')
-
-    await unblockUser('target-user-1')
-  } finally {
-    globalThis.fetch = previousFetch
-    clearSession()
-  }
+  })
+  const xlsx = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  assert.ok(openapi.paths['/api/v1/simulations/{id}/export/xlsx'].get.responses['200'].content[xlsx])
+  assert.ok(openapi.paths['/api/v1/offers/{offerId}/schedule/export/xlsx'].get.responses['200'].content[xlsx])
 })
 
-test('US18: conversation history export downloads transcripts in TXT and JSON formats', async () => {
-  const previousFetch = globalThis.fetch
-  try {
-    startSession({ token: 'chat-token', expiresIn: 3600 })
-
-    globalThis.fetch = async (url, options) => {
-      assert.equal(options.headers.Authorization, 'Bearer chat-token')
-      if (url.includes('/messages/conversations/conv-123/export/json')) {
-        return new Response(
-          JSON.stringify({
-            conversationId: 'conv-123',
-            totalMessages: 2,
-            messages: [
-              { senderId: 'user-a', content: 'Hola, ¿sigue disponible el departamento?', sentAt: '2026-11-15T10:00:00Z' },
-              { senderId: 'user-b', content: 'Sí, podemos coordinar visita.', sentAt: '2026-11-15T10:05:00Z' },
-            ],
-          }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
-      }
-      if (url.includes('/messages/conversations/conv-123/export')) {
-        const textContent = '========================================\nFIDICORP - HISTORIAL DE CONVERSACION\n========================================'
-        return new Response(textContent, {
-          status: 200,
-          headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-        })
-      }
-      throw new Error(`Unexpected URL: ${url}`)
+test('US15: el asesor envía el AiRecommendationRequest real y lee los campos planos de la respuesta', async () => {
+  await withApi(() => respond('aiRecommendations'), async calls => {
+    const response = await getAiPropertyRecommendations({ monthlyIncome: '6000.00', currency: 'PEN', downPaymentAvailable: '50000.00',
+      preferredDistrict: ' Miraflores ', desiredTermYears: 20, preferenceTags: ['terraza'] })
+    assert.deepEqual(calls[0].body, { monthlyIncome: '6000.00', downPaymentAvailable: '50000.00', currency: 'PEN',
+      preferredDistrict: 'Miraflores', desiredTermYears: 20, preferenceTags: ['terraza'] })
+    assertMatchesRequestSchema(calls[0].body, '/ai/recommendations')
+    const view = advisorView(response)
+    assert.equal(view.maxAllowableInstallment, '2100.00')
+    assert.ok(view.summary.includes('35%'))
+    assert.ok(view.analyzed >= 1)
+    const top = view.recommendations[0]
+    for (const field of ['relevanceScore', 'debtToIncomeRatioPercent', 'financiallyViable', 'recommendationReason', 'estimatedMonthlyInstallment']) {
+      assert.ok(field in top, `falta ${field} en la respuesta real`)
     }
+    assert.match(top.estimatedMonthlyInstallment, /^\d+\.\d{2}$/)
+    assert.equal(top.ratioLabel, `${top.debtToIncomeRatioPercent} %`)
+  })
+  await withApi(() => respond('aiRecommendations'), async calls => {
+    await getAiPropertyRecommendations({ monthlyIncome: '9000', downPaymentAvailable: '', preferredDistrict: '' })
+    assert.equal(calls[0].body.downPaymentAvailable, null)
+    assert.equal(calls[0].body.preferredDistrict, null)
+  })
+})
 
-    const txtBlob = await exportConversationText('conv-123')
-    assert.ok(txtBlob instanceof Blob)
+test('US16: conversaciones reales con UUID, bandeja y mensajes recibidos', async () => {
+  const conversation = contracts.conversationCreated.response
+  const ownerId = conversation.counterpartId
+  await withApi(call => {
+    if (call.url.endsWith('/messages/conversations') && call.method === 'POST') return respond('conversationCreated')
+    if (call.url.endsWith('/messages/conversations')) return respond('conversations')
+    if (call.url.endsWith('/messages')) return call.url.includes('/conversations/') ? respond('messages') : respond('messageSent')
+    throw new Error(`URL inesperada ${call.url}`)
+  }, async calls => {
+    const created = await startConversation({ recipientId: ownerId, propertyId: conversation.propertyId })
+    assertMatchesRequestSchema(calls[0].body, '/messages/conversations')
+    assert.ok(isUuid(created.conversationId))
+    const sent = await sendMessage({ conversationId: created.conversationId, content: '¿Sigue disponible?' })
+    assert.deepEqual(Object.keys(calls[1].body).sort(), ['content', 'conversationId'])
+    assertMatchesRequestSchema(calls[1].body, '/messages')
+    assert.equal(sent.recipientId, ownerId)
+    const inbox = await listConversations()
+    assert.equal(inbox[0].conversationId, created.conversationId)
+    assert.equal(inbox[0].messageCount, 1)
+    const thread = threadView(await listMessages(created.conversationId), ownerId)
+    assert.equal(thread[0].incoming, true)
+    assert.equal(thread[0].content, '¿Sigue disponible?')
+  })
+  assert.throws(() => sendMessage({ conversationId: 'conv-general-001', content: 'x' }), /UUID/)
+  assert.equal(contracts.conversationForbidden.status, 403)
+})
 
-    const jsonBlob = await exportConversationJson('conv-123')
-    assert.ok(jsonBlob instanceof Blob)
-  } finally {
-    globalThis.fetch = previousFetch
-    clearSession()
-  }
+test('US17: bloqueos leen blockId/blockedId reales; US18 exporta con el UUID real', async () => {
+  const blockedId = contracts.blockCreated.response.blockedId
+  const conversationId = contracts.conversationExportJson.response.conversationId
+  await withApi(call => {
+    if (call.url.includes('/messages/blocks/') && call.method === 'POST') return respond('blockCreated')
+    if (call.url.includes('/messages/blocks/') && call.method === 'DELETE') return new Response(null, { status: 204 })
+    if (call.url.endsWith('/messages/blocks')) return respond('blocks')
+    if (call.url.endsWith('/export/json')) return respond('conversationExportJson')
+    if (call.url.endsWith('/export')) return new Response(contracts.conversationExportJson.response.formattedTranscript, { status: 200, headers: { 'Content-Type': 'text/plain;charset=UTF-8' } })
+    throw new Error(`URL inesperada ${call.url}`)
+  }, async calls => {
+    const block = await blockUser(blockedId, 'Spam repetitivo')
+    assertMatchesRequestSchema(calls[0].body, '/messages/blocks/{targetUserId}')
+    assert.ok(isUuid(block.blockId))
+    const list = await listBlockedUsers()
+    assert.equal(list[0].blockedId, blockedId)
+    assert.ok('blockId' in list[0] && !('blockedUserId' in list[0]))
+    await unblockUser(list[0].blockedId)
+    assert.ok(calls.at(-1).url.endsWith(`/messages/blocks/${blockedId}`))
+    const txt = await exportConversationText(conversationId)
+    assert.ok((await txt.text()).includes('CREDICASA - HISTORIAL OFICIAL'))
+    const json = JSON.parse(await (await exportConversationJson(conversationId)).text())
+    assert.equal(json.conversationId, conversationId)
+    assert.equal(json.totalMessages, 1)
+  })
+  assert.throws(() => blockUser('undefined'), /UUID/)
+  assert.equal(contracts.messageBlocked409.status, 409)
+  assert.equal(contracts.messageBlocked409.response.status, 409)
 })

@@ -79,13 +79,23 @@ export async function freePort() {
   await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
   return port
 }
+const LOOPBACK = new Set(['127.0.0.1', 'localhost', '[::1]'])
+/** La API de aceptación debe ser el API Gateway (o un servicio) en loopback por HTTP con ruta exacta /api/v1: nunca una API externa. */
+export function isLoopbackApiBase(value) {
+  let url
+  try { url = new URL(value) } catch { return false }
+  return url.protocol === 'http:' && LOOPBACK.has(url.hostname) && Boolean(url.port) && url.pathname === '/api/v1' && !url.username && !url.password && !url.search && !url.hash
+}
+export function validateGatewayApiBase(value) {
+  if (!isLoopbackApiBase(value)) throw new Error('La API de aceptación debe ser http://localhost:<puerto>/api/v1 (loopback); no se admiten APIs externas.')
+  return value
+}
 export async function readFixtureManifest(path, expectedPid) {
   let file
   try { file = await stat(path) } catch (error) { if (error.code === 'ENOENT') return null; throw error }
   if (process.platform !== 'win32' && (file.mode & 0o777) !== 0o600) throw new Error('El manifiesto debe ser privado (0600).')
   const data = JSON.parse(await readFile(path, 'utf8'))
-  const url = new URL(data.apiBaseUrl)
-  if (url.protocol !== 'http:' || url.hostname !== '127.0.0.1' || !url.port || url.pathname !== '/api/v1' || url.username || url.password || url.search || url.hash || data.pid !== expectedPid) throw new Error('El manifiesto no corresponde al fixture local supervisado.')
+  if (!isLoopbackApiBase(data.apiBaseUrl) || data.pid !== expectedPid) throw new Error('El manifiesto no corresponde al fixture local supervisado.')
   for (const role of ['client', 'otherClient', 'realtor']) if (!data[role]?.id || !data[role]?.email || !data[role]?.password) throw new Error('El manifiesto del fixture está incompleto.')
   return data
 }
